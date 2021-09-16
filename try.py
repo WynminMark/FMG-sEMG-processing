@@ -6,6 +6,7 @@ Created on Tue Sep 14 14:40:28 2021
 """
 
 import pandas as pd
+import main
 
 
 def pdcsv_read():
@@ -22,7 +23,7 @@ def pdtable_read():
     print(data)
 
 if __name__ == '__main__':
-    pdtable_read()
+
 
 
 
