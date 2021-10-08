@@ -6,8 +6,8 @@ Created on Tue Sep 14 14:40:28 2021
 """
 
 import pandas as pd
-import main
-
+from tkinter import *
+from tkinter.filedialog import askdirectory
 
 def pdcsv_read():
     data = pd.read_csv("grade-0.db",sep=';')
@@ -22,8 +22,14 @@ def pdtable_read():
     print(type(data))
     print(data)
 
-if __name__ == '__main__':
 
+
+def selectPath():
+    path_ = askdirectory()
+    path.set(path_)
+    
+
+selectPath()
 
 
 

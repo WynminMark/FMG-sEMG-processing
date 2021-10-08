@@ -10,14 +10,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 from scipy import signal
-import seaborn as sns 
+import time
+import datetime
+import seaborn as sns
 
 
-def read_label():
+def read_label(file_path):
     # read label.txt to list
     label_raw = []
     label_split = []
-    with open("D:\code\data\iFEMG\g-0.txt", "r") as f:
+    with open(file_path, "r") as f:
         for line in f.readlines():
             line = line.strip('\n')
             label_raw.append(line)
@@ -25,7 +27,7 @@ def read_label():
         label_raw.remove('')   
     for l in label_raw:
         label_split.append(l.split(' '))
-    print(len(label_split))
+    print("label length: ", len(label_split))
     return label_split
 
 
@@ -95,55 +97,42 @@ def power_spec(y, fs):
 
 
 def sEMG_analysis(data, fs):
-    pxx, f = plt.psd(data, NFFT = 256, Fs = fs, Fc = 0, detrend = mlab.detrend_none,
+    # calculate psd specture
+    pxx, f = plt.psd(data, NFFT = 512, Fs = fs, Fc = 0, detrend = mlab.detrend_none,
         window = mlab.window_hanning, noverlap = 0, pad_to = None, 
         sides = 'default', scale_by_freq = None, return_line = None)
+    plt.close()
     
     # med frequency
     N = len(f)
+    # calculate (psd curve) integration
     MSUM = [0]
     for i in range(1, N, 1):
-        MSUM.append(MSUM(i - 1) + Pxx(i - 1) * (f(i) - f(i - 1)))
+        MSUM.append(MSUM[i - 1] + pxx[i - 1] * (f[i] - f[i - 1]))
     
     diff = []
+    for i in range(0, N, 1):
+        diff.append(MSUM[i] - MSUM[N-1]/2)
+    for i in range(N):
+        if diff[i] <= 0 and diff[i + 1] >= 0:
+            mf_x1= i
+            mf_x2 = i + 1
+            break
+    # linear interpolation based mf calculation
+    mf = (f[mf_x1]*diff[mf_x2] - f[mf_x2]*diff[mf_x1])/(diff[mf_x2] - diff[mf_x1])
+    
+    # average power frequency
+    FSUM = [0]
     for i in range(1, N, 1):
-        diff.append(MSUM(i) - MSUM(N)/2);
+        FSUM.append(FSUM[i - 1] + f[i] * pxx[i - 1] * (f[i] - f[i - 1]))
+    mpf = FSUM[N - 1]/MSUM[N - 1]
+    power = FSUM[N - 1]
+    power_time = sum([num*num for num in data])
+    return mf, mpf, power, power_time
+    #return mf, lmp, mmp, hmp, power, mpf, sEMG_integrt, m_rect, sEMG_rms
 
-    mfindex = abs(abs(diff)-min(abs(diff))) < 1e-10;
-    mf = f(mfindex);
-    
-    FSUM = zeros(1,len);
-    FSUM(1) = 0;
-    for i = 2:length(f)
-        FSUM(i) = FSUM(i - 1) + f(i) * Pxx(i - 1) * (f(i) - f(i - 1));
-    end
-    mpf = FSUM(len) / MSUM(len);
-    power = FSUM(len);
-    
-    %% low/med/high band power 
-    index15 = sum(f < 15);
-    index40 = sum(f <= 40);
-    index96 = sum(f <= 96);
-    index400 = sum(f <= 400);
-    % disp([f(index15), f(index40), f(index96), f(index400)])
-    lmp = FSUM(index40) - FSUM(index15);
-    mmp = FSUM(index96) - FSUM(index40);
-    hmp = FSUM(index400) - FSUM(index96);
-    
-    %% sEMG integration
-    sEMG_abs = abs(rawdata);
-    sEMG_integrt = sum(sEMG_abs);
-    
-    # mean rectification
-    m_rect = mean(sEMG_abs);
-    
-    # rms
-    sEMG_rms = rms(rawdata);
-    # over-zero counting
-    # wave length
-    # changes in slope sign
-    return mf, lmp, mmp, hmp, power, mpf, sEMG_integrt, m_rect, sEMG_rms
-
+def FMG_analysis(data, fs):
+    pass
 
 
 if __name__ == '__main__':
@@ -152,60 +141,66 @@ if __name__ == '__main__':
     data_FMG = raw_data[7].values
     data_sEMG = raw_data[15].values
     
-    fs = 1200
+    #处理db文件中的ms level时间戳
+    t_stamp = []
+    for t in data_time:
+        t_array = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S,%f")
+        ret_stamp = int(time.mktime(t_array.timetuple()) * 1000 + t_array.microsecond/1000)
+        t_stamp.append(ret_stamp)
+        
+    #处理label.txt中的ms level时间戳
+    label = read_label("D:\code\data\iFEMG\g-0.txt")
+    label_t_stamp = []
+    for x in label:
+        t = x[0] + " " + x[1]
+        t_array = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S.%f")
+        ret_stamp = int(time.mktime(t_array.timetuple()) * 1000 + t_array.microsecond/1000)
+        label_t_stamp.append(ret_stamp)
+        
+    sEMG_data_set = []
+    FMG_data_set = []
+    temp_sEMG = []
+    temp_FMG = []
+    brk_p = 0
+    for i in range(len(label) - 1):
+        if (label[i][2] == "收缩") and (label[i + 1][2] == "舒张"):
+            for j in range(len(t_stamp)):
+                if label_t_stamp[i] <= t_stamp[j] <= label_t_stamp[i + 1]:
+                    temp_sEMG.append(data_sEMG[j])
+                    temp_FMG.append(data_FMG[j])
+            sEMG_data_set.append(temp_sEMG)
+            FMG_data_set.append(temp_FMG)
+            temp_sEMG = []
+            temp_FMG = []
+                    
+            
+        
+        
     
-    fig_show(None, data_sEMG[:12000], "raw sEMG")
-    
-    fft_x, fft_y = freq_spec(data_sEMG[:12000], fs)
     
     
     
-    data_sEMG_f = band_trap_filter(data_sEMG, fs, 200)
-    p_x, p_y = power_spec(data_sEMG_f, fs)
-    
-    #plt.figure()
-    pxx, f = plt.psd(data_sEMG_f, NFFT = 256, Fs = 1200, Fc = 0, detrend = mlab.detrend_none,
-            window = mlab.window_hanning, noverlap = 0, pad_to = None, 
-            sides = 'default', scale_by_freq = None, return_line = None)
-    plt.title("psd")
-    plt.close()
-   # plt.show()
-    
-
     
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

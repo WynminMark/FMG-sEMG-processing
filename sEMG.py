@@ -12,7 +12,7 @@ from scipy import signal
 
 # load data
 raw_data = pd.read_table("grade-0.db", sep = ';', header = None)
-data_sEMG = raw_data[15].values
+data_sEMG = raw_data[15].values#7th sEMG
 fs = 1200
 
 def band_trap_filter(data, fs, f0):
