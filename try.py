@@ -8,6 +8,7 @@ Created on Tue Sep 14 14:40:28 2021
 import pandas as pd
 from tkinter import *
 from tkinter.filedialog import askdirectory
+import seaborn as sns
 
 def pdcsv_read():
     data = pd.read_csv("grade-0.db",sep=';')
@@ -27,9 +28,9 @@ def pdtable_read():
 def selectPath():
     path_ = askdirectory()
     path.set(path_)
+    pass
     
 
-selectPath()
 
 
 
