@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Sep 14 14:40:28 2021
-
+Created on Tue Nov  2 16:39:51 2021
+常用基本处理函数库
 @author: WeimyMark
 """
 
 import pandas as pd
 import numpy as np
-#from numpy import *
+# from numpy import *
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 from scipy import signal
 import time
 import datetime
-import seaborn as sns
+# import seaborn as sns
 
 
 def read_label(file_path):
@@ -49,11 +49,6 @@ def band_trap_filter(data, fs, f0):
     filtered_data = signal.filtfilt(b, a, data)
     return filtered_data
 
-
-def band_pass_filter(data, fs, fstop1, fstop2):
-    b, a = signal.butter(8, [2*fstop1/fs, 2*fstop2/fs], 'bandpass')
-    filted_data = signal.filtfilt(b, a, data)
-    return filted_data
 
 def fig_show(x, y, title):
     # 快速显示信号
@@ -124,16 +119,12 @@ def data_segment(raw_data, label):
     # raw_data: db file from simplewebapp readed as dataframe
     # label: 
     # output:
-        
-    # 读取数据array
+    # 获得数据array
     data_time = raw_data[0].values
     data_FMG = raw_data[7].values
     raw_sEMG = raw_data[15].values
-    
-    # 滤波
-    sEMGf1 = band_pass_filter(raw_sEMG, 1200, 15, 500)
-    sEMGf2 = band_trap_filter(sEMGf1, 1200, 200)
-    data_sEMG = band_trap_filter(sEMGf2, 1200, 400)
+    # 滤除不明原因导致的200Hz工频谐波
+    data_sEMG = band_trap_filter(raw_sEMG, 1200, 200)
     
     #将db文件中的时间转换为ms level时间戳
     t_stamp = [] # 保存数据文件中时间转换的时间戳，精度ms
@@ -221,77 +212,3 @@ def sEMG_analysis(data, fs):
     power_time = sum([num*num for num in data])
     return mf, mpf, power, power_time
     #return mf, lmp, mmp, hmp, power, mpf, sEMG_integrt, m_rect, sEMG_rms
-
-
-def form_feature_df(db_path, label_path, subject, strength_level):
-    # 读取数据，
-    # 调用预处理函数进行滤波和分段
-    # 调用函数，计算特征，返回df类型数据集
-    raw_data = pdtable_read_db(db_path)
-    label = read_label(label_path)
-    sEMG, FMG, rsEMG, rFMG = data_segment(raw_data, label)
-    df = pd.DataFrame(columns = ('subject', 'strength_level', 'mf', 'mpf', 'power', 'FMG_mean'))
-    
-    for i in range(len(FMG)):
-        mf, mpf, power, power_time = sEMG_analysis(sEMG[i], 1200)
-        FMG_mean = FMG_analysis(FMG[i], 1200)
-        df = df.append({'subject': subject,
-                        'strength_level': strength_level,
-                        'mf': mf,
-                        'mpf': mpf,
-                        'power': power,
-                        'FMG_mean': FMG_mean}, ignore_index=True)
-    return df
-
-
-def fea_df_norm(features_df, col_name):
-    # 对feature_df 中的 col_name列进行归一化
-    s = (features_df[col_name] - features_df[col_name].min())/(features_df[col_name].max() - features_df[col_name].min())
-    #安全删除，如果用del是永久删除
-    fea_norm_df = features_df.drop([col_name], axis = 1)
-    #把规格化的那一列插入到数组中,最开始的14是我把他插到了第15lie
-    fea_norm_df.insert(2, col_name, s)
-    return fea_norm_df
-
-if __name__ == '__main__':
-    
-    df0 = form_feature_df("D:\code\data\iFEMG\grade-0.db", "D:\code\data\iFEMG\g-0.txt", "zpk", "0")
-    df1 = form_feature_df("D:\code\data\iFEMG\grade-1.db", "D:\code\data\iFEMG\g-1.txt", "zpk", "1")
-    df2 = form_feature_df("D:\code\data\iFEMG\grade-2.db", "D:\code\data\iFEMG\g-2.txt", "zpk", "2")
-    df3 = form_feature_df("D:\code\data\iFEMG\grade-3.db", "D:\code\data\iFEMG\g-3.txt", "zpk", "3")
-    
-    features_df = pd.concat([df0, df1, df2, df3], axis = 0, ignore_index = True)
-    
-    norm1 = fea_df_norm(features_df, 'mf')
-    norm2 = fea_df_norm(norm1, 'mpf')
-    norm3 = fea_df_norm(norm2, 'power')
-    fea_norm_df = fea_df_norm(norm3, 'FMG_mean')
-    
-    show_df = pd.DataFrame(columns = ('subject', 'strength_level', 'norm_values', 'fea_name'))
-    fea_name_list = ['mf', 'mpf', 'power', 'FMG_mean']
-    
-    for row in fea_norm_df.itertuples():
-        for i in fea_name_list:
-            show_df = show_df.append({'subject': row.subject,
-                                      'strength_level': row.strength_level,
-                                      'norm_values': getattr(row, i),
-                                      'fea_name': i}, ignore_index=True)
-   
-    sns.catplot(x="fea_name", y="norm_values", hue="strength_level", data=show_df)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-
-    
-    
