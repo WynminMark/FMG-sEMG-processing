@@ -109,13 +109,17 @@ def power_spec(y, fs):
     return x_index, y_value
 
 
-def FMG_analysis(data, fs):
+def FMG_analysis(FMG, rFMG, fs):
     # 处理FMG data，获得该段数据的特征值
-    if len(data) != 0:
-        FMG_mean = sum(data)/len(data)
+    if len(FMG) != 0 and len(rFMG) != 0:
+        FMG_mean = sum(FMG)/len(FMG)
+        rFMG_mean = sum(rFMG)/len(rFMG)
+        # 计算相对变化，加绝对值避免0级肌力导致变化为小负数
+        #relative_FMG_values = abs(FMG_mean - rFMG_mean)/rFMG_mean
+        relative_FMG_values = abs(FMG_mean - rFMG_mean)
     else:
-        FMG_mean = 0
-    return FMG_mean
+        relative_FMG_values = 0
+    return relative_FMG_values
 
 
 def data_segment(raw_data, label):
@@ -230,16 +234,18 @@ def form_feature_df(db_path, label_path, subject, strength_level):
     raw_data = pdtable_read_db(db_path)
     label = read_label(label_path)
     sEMG, FMG, rsEMG, rFMG = data_segment(raw_data, label)
-    df = pd.DataFrame(columns = ('subject', 'strength_level', 'mf', 'mpf', 'power', 'FMG_mean'))
+    df = pd.DataFrame(columns = ('subject', 'strength_level', 'mf', 'mpf', 'power', 'power_time', 'FMG_mean'))
     
-    for i in range(len(FMG)):
+    data_set_num = min([len(FMG), len(rFMG)])
+    for i in range(data_set_num):
         mf, mpf, power, power_time = sEMG_analysis(sEMG[i], 1200)
-        FMG_mean = FMG_analysis(FMG[i], 1200)
+        FMG_mean = FMG_analysis(FMG[i], rFMG[i], 1200)
         df = df.append({'subject': subject,
                         'strength_level': strength_level,
                         'mf': mf,
                         'mpf': mpf,
                         'power': power,
+                        'power_time': power_time,
                         'FMG_mean': FMG_mean}, ignore_index=True)
     return df
 
@@ -255,20 +261,21 @@ def fea_df_norm(features_df, col_name):
 
 if __name__ == '__main__':
     
-    df0 = form_feature_df("D:\code\data\iFEMG\grade-0.db", "D:\code\data\iFEMG\g-0.txt", "zpk", "0")
-    df1 = form_feature_df("D:\code\data\iFEMG\grade-1.db", "D:\code\data\iFEMG\g-1.txt", "zpk", "1")
-    df2 = form_feature_df("D:\code\data\iFEMG\grade-2.db", "D:\code\data\iFEMG\g-2.txt", "zpk", "2")
-    df3 = form_feature_df("D:\code\data\iFEMG\grade-3.db", "D:\code\data\iFEMG\g-3.txt", "zpk", "3")
+    df0 = form_feature_df("D:\code\data\iFEMG\grade-10.db", "D:\code\data\iFEMG\g-10.txt", "zpk", "0")
+    df1 = form_feature_df("D:\code\data\iFEMG\grade-11.db", "D:\code\data\iFEMG\g-11.txt", "zpk", "1")
+    df2 = form_feature_df("D:\code\data\iFEMG\grade-12.db", "D:\code\data\iFEMG\g-12.txt", "zpk", "2")
+    df3 = form_feature_df("D:\code\data\iFEMG\grade-13.db", "D:\code\data\iFEMG\g-13.txt", "zpk", "3")
     
     features_df = pd.concat([df0, df1, df2, df3], axis = 0, ignore_index = True)
     
     norm1 = fea_df_norm(features_df, 'mf')
     norm2 = fea_df_norm(norm1, 'mpf')
     norm3 = fea_df_norm(norm2, 'power')
-    fea_norm_df = fea_df_norm(norm3, 'FMG_mean')
+    norm4 = fea_df_norm(norm3, 'power_time')
+    fea_norm_df = fea_df_norm(norm4, 'FMG_mean')
     
     show_df = pd.DataFrame(columns = ('subject', 'strength_level', 'norm_values', 'fea_name'))
-    fea_name_list = ['mf', 'mpf', 'power', 'FMG_mean']
+    fea_name_list = ['mf', 'mpf', 'power', 'power_time', 'FMG_mean']
     
     for row in fea_norm_df.itertuples():
         for i in fea_name_list:
@@ -277,7 +284,11 @@ if __name__ == '__main__':
                                       'norm_values': getattr(row, i),
                                       'fea_name': i}, ignore_index=True)
    
-    sns.catplot(x="fea_name", y="norm_values", hue="strength_level", data=show_df)
+    sns.catplot(x = "fea_name",
+                y = "norm_values",
+                hue = "strength_level",
+                data = show_df,
+                kind = 'box')
     
     
     

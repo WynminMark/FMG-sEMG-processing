@@ -27,7 +27,7 @@ for i in range(len(FMG)):
                     'FMG_mean': FMG_mean}, ignore_index=True)
 
 
-y = sEMG[1]
+y = raw_data[7].values
 x = x = np.arange(0, len(y), 1)
 
 plt.plot(x, y)   
