@@ -55,6 +55,7 @@ def band_pass_filter(data, fs, fstop1, fstop2):
     filted_data = signal.filtfilt(b, a, data)
     return filted_data
 
+
 def fig_show(x, y, title):
     # 快速显示信号
     plt.figure()

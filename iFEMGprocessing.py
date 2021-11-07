@@ -7,13 +7,13 @@ Created on Tue Nov  2 16:39:51 2021
 
 import pandas as pd
 import numpy as np
-# from numpy import *
+#from numpy import *
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 from scipy import signal
 import time
 import datetime
-# import seaborn as sns
+#import seaborn as sns
 
 
 def read_label(file_path):
@@ -48,6 +48,12 @@ def band_trap_filter(data, fs, f0):
     w, h = signal.freqz(b, a)
     filtered_data = signal.filtfilt(b, a, data)
     return filtered_data
+
+
+def band_pass_filter(data, fs, fstop1, fstop2):
+    b, a = signal.butter(8, [2*fstop1/fs, 2*fstop2/fs], 'bandpass')
+    filted_data = signal.filtfilt(b, a, data)
+    return filted_data
 
 
 def fig_show(x, y, title):
@@ -104,13 +110,17 @@ def power_spec(y, fs):
     return x_index, y_value
 
 
-def FMG_analysis(data, fs):
+def FMG_analysis(FMG, rFMG, fs):
     # 处理FMG data，获得该段数据的特征值
-    if len(data) != 0:
-        FMG_mean = sum(data)/len(data)
+    if len(FMG) != 0 and len(rFMG) != 0:
+        FMG_mean = sum(FMG)/len(FMG)
+        rFMG_mean = sum(rFMG)/len(rFMG)
+        # 计算相对变化，加绝对值避免0级肌力导致变化为小负数
+        #relative_FMG_values = abs(FMG_mean - rFMG_mean)/rFMG_mean
+        relative_FMG_values = abs(FMG_mean - rFMG_mean)
     else:
-        FMG_mean = 0
-    return FMG_mean
+        relative_FMG_values = 0
+    return relative_FMG_values
 
 
 def data_segment(raw_data, label):
@@ -119,12 +129,16 @@ def data_segment(raw_data, label):
     # raw_data: db file from simplewebapp readed as dataframe
     # label: 
     # output:
-    # 获得数据array
+        
+    # 读取数据array
     data_time = raw_data[0].values
     data_FMG = raw_data[7].values
     raw_sEMG = raw_data[15].values
-    # 滤除不明原因导致的200Hz工频谐波
-    data_sEMG = band_trap_filter(raw_sEMG, 1200, 200)
+    
+    # 滤波
+    sEMGf1 = band_pass_filter(raw_sEMG, 1200, 15, 500)
+    sEMGf2 = band_trap_filter(sEMGf1, 1200, 200)
+    data_sEMG = band_trap_filter(sEMGf2, 1200, 400)
     
     #将db文件中的时间转换为ms level时间戳
     t_stamp = [] # 保存数据文件中时间转换的时间戳，精度ms
@@ -212,3 +226,39 @@ def sEMG_analysis(data, fs):
     power_time = sum([num*num for num in data])
     return mf, mpf, power, power_time
     #return mf, lmp, mmp, hmp, power, mpf, sEMG_integrt, m_rect, sEMG_rms
+
+
+def form_feature_df(db_path, label_path, subject, strength_level):
+    # 读取数据，
+    # 调用预处理函数进行滤波和分段
+    # 调用函数，计算特征，返回df类型数据集
+    raw_data = pdtable_read_db(db_path)
+    label = read_label(label_path)
+    sEMG, FMG, rsEMG, rFMG = data_segment(raw_data, label)
+    df = pd.DataFrame(columns = ('subject', 'strength_level', 'mf', 'mpf', 'power', 'power_time', 'FMG_mean'))
+    
+    data_set_num = min([len(FMG), len(rFMG)])
+    for i in range(data_set_num):
+        mf, mpf, power, power_time = sEMG_analysis(sEMG[i], 1200)
+        FMG_mean = FMG_analysis(FMG[i], rFMG[i], 1200)
+        df = df.append({'subject': subject,
+                        'strength_level': strength_level,
+                        'mf': mf,
+                        'mpf': mpf,
+                        'power': power,
+                        'power_time': power_time,
+                        'FMG_mean': FMG_mean}, ignore_index=True)
+    return df
+
+
+def fea_df_norm(features_df, col_name):
+    # 对feature_df 中的 col_name列进行归一化
+    s = (features_df[col_name] - features_df[col_name].min())/(features_df[col_name].max() - features_df[col_name].min())
+    #安全删除，如果用del是永久删除
+    fea_norm_df = features_df.drop([col_name], axis = 1)
+    #把规格化的那一列插入到数组中,最开始的14是我把他插到了第15lie
+    fea_norm_df.insert(2, col_name, s)
+    return fea_norm_df
+
+
+
