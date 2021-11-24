@@ -56,22 +56,6 @@ def band_pass_filter(data, fs, fstop1, fstop2):
     return filted_data
 
 
-def fig_show(x, y, title):
-    # 快速显示信号
-    plt.figure()
-    if x:
-        plt.plot(x, y)
-    else:
-        x = np.arange(0, len(y), 1)
-        plt.plot(x, y) 
-    
-    plt.xlabel("Samples")
-    plt.ylabel("Amplitude")
-    plt.title(title)
-    plt.show()
-    pass
-
-
 def freq_spec(y, fs):
     # 获得一段信号y的频谱，并return计算结果
     N = len(y)
