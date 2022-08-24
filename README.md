@@ -5,3 +5,7 @@
 ## file input:
  - DB data file from simplePythonWebApp;
  - label file from motion-guide-gui
+
+
+### filter.py
+- real-time filter function for simpleWebApp

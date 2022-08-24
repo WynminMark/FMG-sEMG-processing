@@ -72,7 +72,6 @@ def freq_spec(y, fs):
     return fft_x, fft_y
 
 
-
 def power_spec(y, fs):
     # 用自相关函数的傅里叶变换求信号的功率谱，结果比较像matlab中自带函数的计算结果，
     # 和python中自带psd函数的计算结果差异较大
