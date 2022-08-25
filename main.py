@@ -28,7 +28,7 @@ if __name__ == '__main__':
     show_df = pd.DataFrame(columns = ('subject', 'strength_level', 'norm_values', 'fea_name'))
     fea_name_list = ['mf', 'mpf', 'power', 'power_time', 'FMG_mean']
     
-    for row in fea_norm_df.itertuples():
+    for row in fea_norm_df.itertuples():    # go through each row
         for i in fea_name_list:
             show_df = show_df.append({'subject': row.subject,
                                       'strength_level': row.strength_level,

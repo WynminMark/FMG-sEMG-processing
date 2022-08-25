@@ -4,7 +4,7 @@ import datetime
 from tkinter.font import Font
 
 
-class motion_guide_GUI():
+class MotionGuideGUI():
     def __init__(self, init_window_obj):
         self.init_window_name = init_window_obj
         #self.progress_bar_len = 500
@@ -123,7 +123,7 @@ class motion_guide_GUI():
 
 def gui_start():
     init_window = tkinter.Tk()              #实例化出一个父窗口
-    win_a = motion_guide_GUI(init_window)
+    win_a = MotionGuideGUI(init_window)
     # 设置根窗口默认属性
     win_a.set_init_window()
     init_window.after(2000, win_a.gui_loop)
