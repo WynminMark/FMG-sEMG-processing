@@ -4,7 +4,7 @@ Created on Tue Sep 14 14:40:28 2021
 
 @author: WeimyMark
 """
-
+import matplotlib as plt
 import pandas as pd
 import seaborn as sns
 import iFEMGprocessing as iFEMG
@@ -40,6 +40,7 @@ if __name__ == '__main__':
                 hue = "strength_level",
                 data = show_df,
                 kind = 'box')
+    plt.show()
     
     
     
