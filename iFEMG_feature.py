@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.mlab as mlab
 
 class SignalFeature():
     '1.init original signal. 2.signal segment'
