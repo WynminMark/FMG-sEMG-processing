@@ -2,6 +2,7 @@
 
 import numpy as np 
 
+
 def featureRMS(data):
     'root mean square value'
     return np.sqrt(np.mean(data**2, axis = 0))

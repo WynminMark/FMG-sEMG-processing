@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
+import numpy as np
+
 
 class SignalFeature():
     '1.init original signal. 2.signal segment'
@@ -89,15 +91,82 @@ class sEMGFeature(SignalFeature):
         super().__init__(rest_signal, active_signal, sample_freq)
         pass
 
-    def time_features(self):
+    def feature_mav(self):
         # calculate average absolute value of rest sEMG
         result_list = []
-        rest_mean_sEMG = sum([abs(i) for i in self.rest_original_signal])/self.rest_signal_len
+        rest_mean_sEMG = np.mean([abs(i) for i in self.rest_original_signal])
         for i in self.active_signal_segment:
-            result_list.append((sum([abs(num) for num in i])/len(i) - rest_mean_sEMG)/rest_mean_sEMG)
+            result_list.append((np.mean([abs(num) for num in i]) - rest_mean_sEMG)/rest_mean_sEMG)
         return result_list
 
+    def feature_rms(self):
+        'root mean square value'
+        result = []
+        rest_value = np.sqrt(np.mean([num**2 for num in self.rest_original_signal], axis = 0))
+        for i in self.active_signal_segment:
+            i_rms = np.sqrt(np.mean([num**2 for num in i], axis = 0))
+            result.append(i_rms - rest_value)/rest_value
+        return result
+
+    def feature_wl(self):
+        'return wave length??'
+        # 对每列数据求差分，取绝对值，求和，平均
+        # 实质是计算一列信号变化的剧烈程度，变化、跳动越剧烈，数值越大，信号越平缓，数值越小
+        result = []
+        rest_value = np.sum(np.abs(np.diff(self.rest_original_signal, axis=0)), axis = 0)/self.rest_signal_len
+        for i in self.active_signal_segment:
+            i_wl = np.sum(np.abs(np.diff(i, axis = 0)), axis = 0)/len(i)
+            result.append(i_wl - rest_value)/rest_value
+        return 
+
+    def feature_zc(self, threshold = 10e-7):
+        'calculate zero-crossing rate'
+        result = []
+        for i in range(1, len(self.rest_original_signal)):
+            diff = self.rest_original_signal[i] - self.rest_original_signal[i - 1]
+            mult = self.rest_original_signal[i] - self.rest_original_signal[i - 1]
+            if np.abs(diff) > threshold and mult < 0:
+                pass
+            pass
+        numOfZC = []
+        length  = data.shape[0]
+        
+        for i in range(channel):
+            count = 0
+            for j in range(1, length):
+                diff = data[j, i] - data[j-1, i]
+                mult = data[j, i] * data[j-1, i]
+                
+                if np.abs(diff) > threshold and mult < 0:
+                    count = count + 1
+            numOfZC.append(count/length)
+        return np.array(numOfZC)
+
+def featureSSC(data, threshold = 10e-7):
+    'return rete of slope sign changes'
+    numOfSSC = []
+    channel = data.shape[1]
+    length  = data.shape[0]
+    
+    for i in range(channel):
+        count = 0
+        for j in range(2, length):
+            diff1 = data[j, i] - data[j-1, i]
+            diff2 = data[j-1, i] - data[j-2, i]
+            sign  = diff1 * diff2
+            
+            if sign<0:  # 小于0，斜率符号发生了变化
+                if(np.abs(diff1) > threshold or np.abs(diff2) > threshold):
+                    count = count + 1
+        numOfSSC.append(count/length)
+    return np.array(numOfSSC)
+
     def freq_features(self):
+        """
+        feature name:
+            mean frequency
+            mean power frequency
+        """
         result_list = []
         for data in self.active_signal_segment:
             # calculate psd specture
@@ -140,7 +209,16 @@ class sEMGFeature(SignalFeature):
 
 
 class AntagonisticMusclesFeature():
-    def __init__(self):
+    """
+    for analysis of antagonistic muscles sEMG signal
+    """
+    def __init__(self, a_rest_signal, a_active_signal, b_rest_signal, b_active_signal, sample_freq = 1000):
+        # init original signal
+        self.a_rest = a_rest_signal
+        self.a_active = a_active_signal
+        self.b_rest = b_rest_signal
+        self.b_active = b_active_signal
+        self.fs = sample_freq
         pass
     pass
 
