@@ -1,6 +1,9 @@
+from unittest import result
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 import numpy as np
+
+from feature_utils import *
 
 
 class SignalFeature():
@@ -105,7 +108,7 @@ class sEMGFeature(SignalFeature):
         rest_value = np.sqrt(np.mean([num**2 for num in self.rest_original_signal], axis = 0))
         for i in self.active_signal_segment:
             i_rms = np.sqrt(np.mean([num**2 for num in i], axis = 0))
-            result.append(i_rms - rest_value)/rest_value
+            result.append((i_rms - rest_value)/rest_value)
         return result
 
     def feature_wl(self):
@@ -116,50 +119,29 @@ class sEMGFeature(SignalFeature):
         rest_value = np.sum(np.abs(np.diff(self.rest_original_signal, axis=0)), axis = 0)/self.rest_signal_len
         for i in self.active_signal_segment:
             i_wl = np.sum(np.abs(np.diff(i, axis = 0)), axis = 0)/len(i)
-            result.append(i_wl - rest_value)/rest_value
+            result.append((i_wl - rest_value)/rest_value)
         return 
 
     def feature_zc(self, threshold = 10e-7):
         'calculate zero-crossing rate'
         result = []
-        for i in range(1, len(self.rest_original_signal)):
-            diff = self.rest_original_signal[i] - self.rest_original_signal[i - 1]
-            mult = self.rest_original_signal[i] - self.rest_original_signal[i - 1]
-            if np.abs(diff) > threshold and mult < 0:
-                pass
+        # 使用函数计算一段信号过零率
+        rest_value = calculate_zc(self.rest_original_signal, threshold)
+        for i in self.active_signal_segment:
+            i_zc = calculate_zc(i, threshold)
+            result.append((i_zc - rest_value)/rest_value)
             pass
-        numOfZC = []
-        length  = data.shape[0]
-        
-        for i in range(channel):
-            count = 0
-            for j in range(1, length):
-                diff = data[j, i] - data[j-1, i]
-                mult = data[j, i] * data[j-1, i]
-                
-                if np.abs(diff) > threshold and mult < 0:
-                    count = count + 1
-            numOfZC.append(count/length)
-        return np.array(numOfZC)
+        return result
 
-def featureSSC(data, threshold = 10e-7):
-    'return rete of slope sign changes'
-    numOfSSC = []
-    channel = data.shape[1]
-    length  = data.shape[0]
-    
-    for i in range(channel):
-        count = 0
-        for j in range(2, length):
-            diff1 = data[j, i] - data[j-1, i]
-            diff2 = data[j-1, i] - data[j-2, i]
-            sign  = diff1 * diff2
-            
-            if sign<0:  # 小于0，斜率符号发生了变化
-                if(np.abs(diff1) > threshold or np.abs(diff2) > threshold):
-                    count = count + 1
-        numOfSSC.append(count/length)
-    return np.array(numOfSSC)
+    def feature_ssc(self, threshold = 10e-7):
+        'return rete of slope sign changes'
+        result = []
+        rest_value = calculate_ssc(self.rest_original_signal, threshold)
+        for i in self.active_signal_segment:
+            i_ssc = calculate_ssc(i, threshold)
+            result.append((i_ssc - rest_value)/rest_value)
+            pass
+        return result
 
     def freq_features(self):
         """

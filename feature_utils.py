@@ -1,5 +1,6 @@
 # 计算简单的信号时域特征
 
+from uuid import RESERVED_FUTURE
 import numpy as np 
 
 
@@ -34,6 +35,20 @@ def featureZC(data, threshold = 10e-7):
         numOfZC.append(count/length)
     return np.array(numOfZC)
 
+def calculate_zc(data, thrsd = 10e-7):
+    'calculate zero-crossing rate of 1 channel signal'
+    # rewrite by weimy
+    count = 0
+    for i in range(1, len(data)):
+        diff = data[i] - data[i - 1]
+        mult = data[i] * data[i - 1]
+        if np.abs(diff) > thrsd and mult < 0:
+            count += 1
+            pass
+        pass
+    return count/len(data)
+
+
 def featureSSC(data, threshold = 10e-7):
     'return rete of slope sign changes'
     numOfSSC = []
@@ -52,3 +67,17 @@ def featureSSC(data, threshold = 10e-7):
                     count = count + 1
         numOfSSC.append(count/length)
     return np.array(numOfSSC)
+
+def calculate_ssc(data, thrsd = 10e-7):
+    count = 0
+    for i in range(2, len(data)):
+        diff1 = data[i] - data[i - 1]
+        diff2 = data[i - 1] - data[i - 2]
+        sign = diff1 * diff2
+        if sign < 0:
+            if np.abs(diff1) > thrsd or np.abs(diff2) > thrsd:
+                count += 1
+                pass
+            pass
+        pass
+    return count/len(data)
