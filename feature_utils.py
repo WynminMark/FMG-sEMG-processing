@@ -1,6 +1,5 @@
 # 计算简单的信号时域特征
 
-from uuid import RESERVED_FUTURE
 import numpy as np 
 
 
@@ -10,7 +9,7 @@ def featureRMS(data):
 
 def featureMAV(data):
     'mean abs value'
-    return np.mean(np.abs(data), axis = 0) 
+    return np.mean(np.abs(data), axis = 0)
 
 def featureWL(data):
     'return wave length??'
