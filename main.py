@@ -7,6 +7,7 @@ Created on Tue Sep 14 14:40:28 2021
 
 import pandas as pd
 import numpy as np
+#from numpy import *
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 from scipy import signal
@@ -27,7 +28,7 @@ def read_label(file_path):
         label_raw.remove('')   
     for l in label_raw:
         label_split.append(l.split(' '))
-    print("label length: ", len(label_split))
+    # print("label length: ", len(label_split))
     return label_split
 
 
@@ -47,6 +48,12 @@ def band_trap_filter(data, fs, f0):
     w, h = signal.freqz(b, a)
     filtered_data = signal.filtfilt(b, a, data)
     return filtered_data
+
+
+def band_pass_filter(data, fs, fstop1, fstop2):
+    b, a = signal.butter(8, [2*fstop1/fs, 2*fstop2/fs], 'bandpass')
+    filted_data = signal.filtfilt(b, a, data)
+    return filted_data
 
 
 def fig_show(x, y, title):
@@ -103,15 +110,91 @@ def power_spec(y, fs):
     return x_index, y_value
 
 
-def FMG_analysis(data, fs):
+def FMG_analysis(FMG, rFMG, fs):
     # 处理FMG data，获得该段数据的特征值
-    pass
+    if len(FMG) != 0 and len(rFMG) != 0:
+        FMG_mean = sum(FMG)/len(FMG)
+        rFMG_mean = sum(rFMG)/len(rFMG)
+        # 计算相对变化，加绝对值避免0级肌力导致变化为小负数
+        #relative_FMG_values = abs(FMG_mean - rFMG_mean)/rFMG_mean
+        relative_FMG_values = abs(FMG_mean - rFMG_mean)
+    else:
+        relative_FMG_values = 0
+    return relative_FMG_values
+
+
+def data_segment(raw_data, label):
+    # 预处理：滤波；处理时间戳；得到活动段和静息段
+    # input:
+    # raw_data: db file from simplewebapp readed as dataframe
+    # label: 
+    # output:
+        
+    # 读取数据array
+    data_time = raw_data[0].values
+    data_FMG = raw_data[7].values
+    raw_sEMG = raw_data[15].values
+    
+    # 滤波
+    sEMGf1 = band_pass_filter(raw_sEMG, 1200, 15, 500)
+    sEMGf2 = band_trap_filter(sEMGf1, 1200, 200)
+    data_sEMG = band_trap_filter(sEMGf2, 1200, 400)
+    
+    #将db文件中的时间转换为ms level时间戳
+    t_stamp = [] # 保存数据文件中时间转换的时间戳，精度ms
+    for t in data_time:
+        t_array = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S,%f")
+        ret_stamp = int(time.mktime(t_array.timetuple()) * 1000 + t_array.microsecond/1000)
+        t_stamp.append(ret_stamp)
+        
+    #处理label.txt中的ms level时间戳
+    # label = read_label("D:\code\data\iFEMG\g-0.txt")
+    label_t_stamp = [] # 保存label文件中时间对应的时间戳，精度ms
+    for x in label:
+        t = x[0] + " " + x[1]
+        t_array = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S.%f")
+        ret_stamp = int(time.mktime(t_array.timetuple()) * 1000 + t_array.microsecond/1000)
+        label_t_stamp.append(ret_stamp)
+        
+    # 比较数据文件和label文件中时间戳，划分肌电活动段
+    # 储存分割好的数据段
+    sEMG_data_set = []
+    FMG_data_set = []
+    rsEMG_data_set = []
+    rFMG_data_set = []
+    # 临时一段静息数据和激活数据
+    temp_sEMG = []
+    temp_FMG = []
+    temp_sEMG_r = [] # 静息数据
+    temp_FMG_r = []
+
+    for i in range(len(label) - 1): # 在label时间范围内
+        if (label[i][2] == "收缩") and (label[i + 1][2] == "舒张"): # 活动段
+            for j in range(len(t_stamp)): # 在整个data长度内搜索，可以优化
+                if label_t_stamp[i] <= t_stamp[j] <= label_t_stamp[i + 1]:
+                    temp_sEMG.append(data_sEMG[j])
+                    temp_FMG.append(data_FMG[j])
+            if len(temp_FMG) != 0:
+                sEMG_data_set.append(temp_sEMG)
+                FMG_data_set.append(temp_FMG)
+            temp_sEMG = []
+            temp_FMG = []
+        else: # 非活动段，肌肉静息
+            for j in range(len(t_stamp)):
+                if label_t_stamp[i] <= t_stamp[j] <= label_t_stamp[i + 1]:
+                    temp_sEMG_r.append(data_sEMG[j])
+                    temp_FMG_r.append(data_FMG[j])
+            rsEMG_data_set.append(temp_sEMG)
+            rFMG_data_set.append(temp_FMG)
+            temp_sEMG_r = []
+            temp_FMG_r = []
+    return sEMG_data_set, FMG_data_set, rsEMG_data_set, rFMG_data_set
 
 
 def sEMG_analysis(data, fs):
     # 处理sEMG data，获得该段数据的特征值
     # calculate psd specture
-    pxx, f = plt.psd(data, NFFT = 512, Fs = fs, Fc = 0, detrend = mlab.detrend_none,
+    pxx, f = plt.psd(data, NFFT = 256, Fs = fs, Fc = 0, detrend = mlab.detrend_none,
         window = mlab.window_hanning, noverlap = 0, pad_to = None, 
         sides = 'default', scale_by_freq = None, return_line = None)
     plt.close()
@@ -145,62 +228,68 @@ def sEMG_analysis(data, fs):
     #return mf, lmp, mmp, hmp, power, mpf, sEMG_integrt, m_rect, sEMG_rms
 
 
+def form_feature_df(db_path, label_path, subject, strength_level):
+    # 读取数据，
+    # 调用预处理函数进行滤波和分段
+    # 调用函数，计算特征，返回df类型数据集
+    raw_data = pdtable_read_db(db_path)
+    label = read_label(label_path)
+    sEMG, FMG, rsEMG, rFMG = data_segment(raw_data, label)
+    df = pd.DataFrame(columns = ('subject', 'strength_level', 'mf', 'mpf', 'power', 'power_time', 'FMG_mean'))
+    
+    data_set_num = min([len(FMG), len(rFMG)])
+    for i in range(data_set_num):
+        mf, mpf, power, power_time = sEMG_analysis(sEMG[i], 1200)
+        FMG_mean = FMG_analysis(FMG[i], rFMG[i], 1200)
+        df = df.append({'subject': subject,
+                        'strength_level': strength_level,
+                        'mf': mf,
+                        'mpf': mpf,
+                        'power': power,
+                        'power_time': power_time,
+                        'FMG_mean': FMG_mean}, ignore_index=True)
+    return df
+
+
+def fea_df_norm(features_df, col_name):
+    # 对feature_df 中的 col_name列进行归一化
+    s = (features_df[col_name] - features_df[col_name].min())/(features_df[col_name].max() - features_df[col_name].min())
+    #安全删除，如果用del是永久删除
+    fea_norm_df = features_df.drop([col_name], axis = 1)
+    #把规格化的那一列插入到数组中,最开始的14是我把他插到了第15lie
+    fea_norm_df.insert(2, col_name, s)
+    return fea_norm_df
+
 if __name__ == '__main__':
-    # read data file.db
-    raw_data = pdtable_read_db("grade-0.db")
-    data_time = raw_data[0].values
-    data_FMG = raw_data[7].values
-    raw_sEMG = raw_data[15].values
-    # 滤除不明原因导致的200Hz工频谐波
-    data_sEMG = band_trap_filter(raw_sEMG, 1200, 200)
     
-    #处理db文件中的ms level时间戳
-    t_stamp = [] # 保存数据文件中时间转换的时间戳，精度ms
-    for t in data_time:
-        t_array = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S,%f")
-        ret_stamp = int(time.mktime(t_array.timetuple()) * 1000 + t_array.microsecond/1000)
-        t_stamp.append(ret_stamp)
-        
-    #处理label.txt中的ms level时间戳
-    label = read_label("D:\code\data\iFEMG\g-0.txt")
-    label_t_stamp = [] # 保存label文件中时间对应的时间戳，精度ms
-    for x in label:
-        t = x[0] + " " + x[1]
-        t_array = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S.%f")
-        ret_stamp = int(time.mktime(t_array.timetuple()) * 1000 + t_array.microsecond/1000)
-        label_t_stamp.append(ret_stamp)
-        
-    # 比较数据文件和label文件中时间戳，划分肌电活动段
-    sEMG_data_set = []
-    FMG_data_set = []
-    temp_sEMG = []
-    temp_FMG = []
-    temp_sEMG_r = [] # 静息数据
-    temp_FMG_r = []
-    rsEMG_data_set = []
-    rFMG_data_set = []
-    brk_p = 0
-    for i in range(len(label) - 1): # 在label时间范围内
-        if (label[i][2] == "收缩") and (label[i + 1][2] == "舒张"): # 活动段
-            for j in range(len(t_stamp)): # 在整个data长度内搜索，可以优化
-                if label_t_stamp[i] <= t_stamp[j] <= label_t_stamp[i + 1]:
-                    temp_sEMG.append(data_sEMG[j])
-                    temp_FMG.append(data_FMG[j])
-            sEMG_data_set.append(temp_sEMG)
-            FMG_data_set.append(temp_FMG)
-            temp_sEMG = []
-            temp_FMG = []
-        else: # 非活动段，肌肉静息
-            for j in range(len(t_stamp)):
-                if label_t_stamp[i] <= t_stamp[j] <= label_t_stamp[i + 1]:
-                    temp_sEMG_r.append(data_sEMG[j])
-                    temp_FMG_r.append(data_FMG[j])
-            rsEMG_data_set.append(temp_sEMG)
-            rFMG_data_set.append(temp_FMG)
-            temp_sEMG_r = []
-            temp_FMG_r = []
+    df0 = form_feature_df("D:\code\data\iFEMG\grade-10.db", "D:\code\data\iFEMG\g-10.txt", "zpk", "0")
+    df1 = form_feature_df("D:\code\data\iFEMG\grade-11.db", "D:\code\data\iFEMG\g-11.txt", "zpk", "1")
+    df2 = form_feature_df("D:\code\data\iFEMG\grade-12.db", "D:\code\data\iFEMG\g-12.txt", "zpk", "2")
+    df3 = form_feature_df("D:\code\data\iFEMG\grade-13.db", "D:\code\data\iFEMG\g-13.txt", "zpk", "3")
     
-    # 可视化显示活动段和非活动端特征区别
+    features_df = pd.concat([df0, df1, df2, df3], axis = 0, ignore_index = True)
+    
+    norm1 = fea_df_norm(features_df, 'mf')
+    norm2 = fea_df_norm(norm1, 'mpf')
+    norm3 = fea_df_norm(norm2, 'power')
+    norm4 = fea_df_norm(norm3, 'power_time')
+    fea_norm_df = fea_df_norm(norm4, 'FMG_mean')
+    
+    show_df = pd.DataFrame(columns = ('subject', 'strength_level', 'norm_values', 'fea_name'))
+    fea_name_list = ['mf', 'mpf', 'power', 'power_time', 'FMG_mean']
+    
+    for row in fea_norm_df.itertuples():
+        for i in fea_name_list:
+            show_df = show_df.append({'subject': row.subject,
+                                      'strength_level': row.strength_level,
+                                      'norm_values': getattr(row, i),
+                                      'fea_name': i}, ignore_index=True)
+   
+    sns.catplot(x = "fea_name",
+                y = "norm_values",
+                hue = "strength_level",
+                data = show_df,
+                kind = 'box')
     
     
     
@@ -215,18 +304,6 @@ if __name__ == '__main__':
     
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     
     

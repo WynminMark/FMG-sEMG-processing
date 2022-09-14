@@ -3,6 +3,8 @@
 Created on Fri Sep 17 10:02:14 2021
 
 @author: WeimyMark
+
+sEMG信号的基本处理代码
 """
 import pandas as pd
 import numpy as np
