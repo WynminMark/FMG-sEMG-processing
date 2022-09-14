@@ -53,6 +53,7 @@ def main():
     data_stand = np.array(data_stand)
     data_walk = np.array(data_walk)
 
+    # round numbers and reshape to N 50*5 data segment
     train_ra = data_ra[0:len(data_ra)//50*50, 0:5].reshape(-1, 50, 5)
     train_rd = data_rd[0:len(data_rd)//50*50, 0:5].reshape(-1, 50, 5)
     train_sa = data_sa[0:len(data_sa)//50*50, 0:5].reshape(-1, 50, 5)

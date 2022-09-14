@@ -56,22 +56,6 @@ def band_pass_filter(data, fs, fstop1, fstop2):
     return filted_data
 
 
-def fig_show(x, y, title):
-    # 快速显示信号
-    plt.figure()
-    if x:
-        plt.plot(x, y)
-    else:
-        x = np.arange(0, len(y), 1)
-        plt.plot(x, y) 
-    
-    plt.xlabel("Samples")
-    plt.ylabel("Amplitude")
-    plt.title(title)
-    plt.show()
-    pass
-
-
 def freq_spec(y, fs):
     # 获得一段信号y的频谱，并return计算结果
     N = len(y)
@@ -88,9 +72,8 @@ def freq_spec(y, fs):
     return fft_x, fft_y
 
 
-
 def power_spec(y, fs):
-    # 用自相关函数的傅里叶变换求信号的功率谱，结果比较像matlab中自带函数的计算结果，
+    '用自相关函数的傅里叶变换求信号的功率谱，结果比较像matlab中自带函数的计算结果，'
     # 和python中自带psd函数的计算结果差异较大
     N = len(y)
     cor_y = np.correlate(y, y, 'same')
