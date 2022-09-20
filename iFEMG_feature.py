@@ -120,7 +120,7 @@ class sEMGFeature(SignalFeature):
         for i in self.active_signal_segment:
             i_wl = np.sum(np.abs(np.diff(i, axis = 0)), axis = 0)/len(i)
             result.append((i_wl - rest_value)/rest_value)
-        return 
+        return result
 
     def feature_zc(self, threshold = 10e-7):
         'calculate zero-crossing rate'
@@ -187,6 +187,7 @@ class sEMGFeature(SignalFeature):
             result_list.append([mf, mpf])
             pass
         return result_list
+    # class end
     pass
 
 
@@ -202,6 +203,7 @@ class AntagonisticMusclesFeature():
         self.b_active = b_active_signal
         self.fs = sample_freq
         pass
+    # class end
     pass
 
 
