@@ -104,44 +104,44 @@ class sEMGFeature(SignalFeature):
 
     def feature_rms(self):
         'root mean square value'
-        result = []
+        result_list = []
         rest_value = np.sqrt(np.mean([num**2 for num in self.rest_original_signal], axis = 0))
         for i in self.active_signal_segment:
             i_rms = np.sqrt(np.mean([num**2 for num in i], axis = 0))
-            result.append((i_rms - rest_value)/rest_value)
-        return result
+            result_list.append((i_rms - rest_value)/rest_value)
+        return result_list
 
     def feature_wl(self):
         'return wave length??'
         # 对每列数据求差分，取绝对值，求和，平均
         # 实质是计算一列信号变化的剧烈程度，变化、跳动越剧烈，数值越大，信号越平缓，数值越小
-        result = []
+        result_list = []
         rest_value = np.sum(np.abs(np.diff(self.rest_original_signal, axis=0)), axis = 0)/self.rest_signal_len
         for i in self.active_signal_segment:
             i_wl = np.sum(np.abs(np.diff(i, axis = 0)), axis = 0)/len(i)
-            result.append((i_wl - rest_value)/rest_value)
-        return result
+            result_list.append((i_wl - rest_value)/rest_value)
+        return result_list
 
     def feature_zc(self, threshold = 10e-7):
         'calculate zero-crossing rate'
-        result = []
+        result_list = []
         # 使用函数计算一段信号过零率
         rest_value = calculate_zc(self.rest_original_signal, threshold)
         for i in self.active_signal_segment:
             i_zc = calculate_zc(i, threshold)
-            result.append((i_zc - rest_value)/rest_value)
+            result_list.append((i_zc - rest_value)/rest_value)
             pass
-        return result
+        return result_list
 
     def feature_ssc(self, threshold = 10e-7):
         'return rete of slope sign changes'
-        result = []
+        result_list = []
         rest_value = calculate_ssc(self.rest_original_signal, threshold)
         for i in self.active_signal_segment:
             i_ssc = calculate_ssc(i, threshold)
-            result.append((i_ssc - rest_value)/rest_value)
+            result_list.append((i_ssc - rest_value)/rest_value)
             pass
-        return result
+        return result_list
 
     def freq_features(self):
         """
@@ -191,18 +191,82 @@ class sEMGFeature(SignalFeature):
     pass
 
 
-class AntagonisticMusclesFeature():
+class AntagonisticFMGFeature():
+    '''
+    calculate the difference between FMG signal of antagonistic muscles.
+    feature name:
+        average_difference
+    '''
+    def __init__(self, a_rest_signal, a_active_signal, b_rest_signal, b_active_signal, sample_freq = 1223, window_len = 1223, step_len = 500):
+        'initialize signal and segment'
+        # 初始化两个class，分别是主动肌肉a和拮抗肌肉b
+        self.a_FMG = FMGFeature(a_rest_signal, a_active_signal, sample_freq)
+        self.b_FMG = FMGFeature(b_rest_signal, b_active_signal, sample_freq)
+        # 数据分段
+        self.a_FMG.signal_segment(window_len, step_len)
+        self.b_FMG.signal_segment(window_len, step_len)
+        pass
+    
+    def average_difference(self):
+        'reture mean(agonist) - mean(antagonist)'
+        # 计算两块肌肉各自的FMG升高值
+        self.a_mean = self.a_FMG.FMG_increase()
+        self.b_mean = self.b_FMG.FMG_increase()
+        # 转换成array计算差值
+        result_array = np.array(self.a_mean) - np.array(self.b_mean)
+        return result_array
+    # class end
+    pass
+
+
+class AntagonisticsEMGFeature():
     """
     for analysis of antagonistic muscles sEMG signal
     """
-    def __init__(self, a_rest_signal, a_active_signal, b_rest_signal, b_active_signal, sample_freq = 1000):
+    def __init__(self, a_rest_signal, a_active_signal, b_rest_signal, b_active_signal, sample_freq = 1223, window_len = 1223, step_len = 500):
         # init original signal
-        self.a_rest = a_rest_signal
-        self.a_active = a_active_signal
-        self.b_rest = b_rest_signal
-        self.b_active = b_active_signal
-        self.fs = sample_freq
+        self.a_sEMG = sEMGFeature(a_rest_signal, a_active_signal, sample_freq)
+        self.b_sEMG = sEMGFeature(b_rest_signal, b_active_signal, sample_freq)
+        # data sagment
+        self.a_sEMG.signal_segment(window_len, step_len)
+        self.b_sEMG.signal_segment(window_len, step_len)
         pass
+
+    def mav_difference(self):
+        result_a = self.a_sEMG.feature_mav()
+        result_b = self.b_sEMG.feature_mav()
+        result_array = np.array(result_a) - np.array(result_b)
+        return result_array
+
+    def rms_difference(self):
+        result_a = self.a_sEMG.feature_rms()
+        result_b = self.b_sEMG.feature_rms()
+        result_array = np.array(result_a) - np.array(result_b)
+        return result_array
+
+    def wl_difference(self):
+        result_a = self.a_sEMG.feature_wl()
+        result_b = self.b_sEMG.feature_wl()
+        result_array = np.array(result_a) - np.array(result_b)
+        return result_array
+
+    def zc_difference(self):
+        result_a = self.a_sEMG.feature_zc()
+        result_b = self.b_sEMG.feature_zc()
+        result_array = np.array(result_a) - np.array(result_b)
+        return result_array
+
+    def ssc_difference(self):
+        result_a = self.a_sEMG.feature_ssc()
+        result_b = self.b_sEMG.feature_ssc()
+        result_array = np.array(result_a) - np.array(result_b)
+        return result_array
+
+    def freq_difference(self):
+        result_a = self.a_sEMG.freq_features()
+        result_b = self.b_sEMG.freq_features()
+        result_array = np.array(result_a) - np.array(result_b)
+        return result_array
     # class end
     pass
 
