@@ -3,20 +3,21 @@ import time
 import datetime
 from tkinter.font import Font
 
-
+# original version motion guide app
 class MotionGuideGUI():
-    def __init__(self, init_window_obj):
+    def __init__(self, init_window_obj, active_duration = 2000, relax_duration = 1000):
         self.init_window_name = init_window_obj
         #self.progress_bar_len = 500
+        # 控制小程序的运行和停止
         self.is_suspend = False
+        # 用于循环的动作序列
         self.motion_sequence = ["收缩\n", "舒张\n"]
         self.motion_seq_len = len(self.motion_sequence)
         self.motion_index = 0
         self.myFont = Font(family="Times New Roman", size=12)
-        self.motion_duration = 2000
-        self.relax_duration = 1000
+        self.motion_duration = active_duration
+        self.relax_duration = relax_duration
         self.f_name = time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime(time.time())) + ".txt"
-
 
     def set_init_window(self):
         # 窗口名和尺寸设置
@@ -74,29 +75,28 @@ class MotionGuideGUI():
         self.analyze_button = tkinter.Button(self.init_window_name, text = "Analyze", bg = "lightgreen", width = 10, command = self.analyze)
         self.analyze_button.grid(row = 1, column = 4)
 
-    
     def start(self):
         self.is_suspend = True
         pass
-
 
     def stop(self):
         self.is_suspend = False
         # self.log_data_Text.insert(tkinter.END, "stop function here\r\n")
         pass
     
-    
     def analyze(self):
+        # 实现分析功能
         pass
-
 
     def gui_loop(self):
         self.init_window_name.update()
 
         if self.is_suspend:
             if self.motion_index <= self.motion_seq_len-1:
+                # 打印动作提示
                 self.init_data_Text.delete(1.0, tkinter.END)
                 self.init_data_Text.insert(1.0, self.motion_sequence[self.motion_index])
+                # 
                 self.write_log_to_Text(self.motion_sequence[self.motion_index])
                 self.motion_index += 1
                 self.init_window_name.after(self.motion_duration, self.gui_loop)
@@ -108,7 +108,6 @@ class MotionGuideGUI():
         #self.init_window_name.after(2000, self.gui_loop)
         pass
         
-        
     def write_log_to_Text(self,logmsg):
         dt_s = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
         dt_ms = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
@@ -118,16 +117,22 @@ class MotionGuideGUI():
         f.write(logmsg_in)
         f.close()
         pass
+    # end class
+    pass
 
 
 
 def gui_start():
-    init_window = tkinter.Tk()              #实例化出一个父窗口
+    # 实例化父窗口
+    init_window = tkinter.Tk()
+    # 创建motion guide GUI类，设置窗口组间和属性
     win_a = MotionGuideGUI(init_window)
-    # 设置根窗口默认属性
     win_a.set_init_window()
+    # 运行gui_loop方法
     init_window.after(2000, win_a.gui_loop)
-    init_window.mainloop()          #父窗口进入事件循环，可以理解为保持窗口运行，否则界面不展示
+    # 父窗口进入事件循环，可以理解为保持窗口运行，否则界面不展示
+    init_window.mainloop()
+    pass
 
 
 if __name__ == '__main__':
