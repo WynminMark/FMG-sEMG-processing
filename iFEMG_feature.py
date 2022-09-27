@@ -1,7 +1,8 @@
-from unittest import result
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 import numpy as np
+import time
+import datetime
 
 from feature_utils import *
 
@@ -19,6 +20,7 @@ class SignalFeature():
     # initiate in signal_segment function
     rest_signal_segment = []
     active_signal_segment = []
+
     # init function
     def __init__(self, rest_signal, active_signal, sample_freq):
         # input signal: 1D list []
@@ -29,6 +31,7 @@ class SignalFeature():
         self.rest_signal_len = len(rest_signal)
         self.active_signal_len = len(active_signal)
         pass
+
     # signal split function
     def signal_segment(self, window_len, step_len):
         'split active/rest signal using sliding window'
@@ -54,6 +57,68 @@ class SignalFeature():
                 self.active_signal_segment.append(self.active_original_signal[i*step_len : i*step_len + window_len])
                 pass
             pass
+        pass
+    
+    def signal_segment_label(self, data_time, label):
+        'segment signal using label file.'
+        # data_time: array
+        # label: output of function read_label(file_path)
+        # reset segment list
+        self.rest_signal_segment = []
+        self.active_signal_segment = []
+
+        #将db文件中的时间转换为ms level时间戳
+        t_stamp = [] # 保存数据文件中时间转换的时间戳，精度ms
+        for t in data_time:
+            t_array = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S,%f")
+            ret_stamp = int(time.mktime(t_array.timetuple()) * 1000 + t_array.microsecond/1000)
+            t_stamp.append(ret_stamp)
+        
+        #处理label.txt中的ms level时间戳
+        # label = read_label("D:\code\data\iFEMG\g-0.txt")
+        label_t_stamp = [] # 保存label文件中时间对应的时间戳，精度ms
+        for x in label:
+            t = x[0] + " " + x[1]
+            t_array = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S.%f")
+            ret_stamp = int(time.mktime(t_array.timetuple()) * 1000 + t_array.microsecond/1000)
+            label_t_stamp.append(ret_stamp)
+        
+        # 比较数据文件和label文件中时间戳，划分肌电活动段
+        # 储存分割好的数据段
+        sEMG_data_set = []
+        FMG_data_set = []
+        rsEMG_data_set = []
+        rFMG_data_set = []
+        # 临时一段静息数据和激活数据
+        temp_sEMG = []
+        temp_FMG = []
+        temp_sEMG_r = [] # 静息数据
+        temp_FMG_r = []
+
+        for i in range(len(label) - 1): # 在label时间范围内
+            if (label[i][2] == "收缩") and (label[i + 1][2] == "舒张"): # 活动段
+                for j in range(len(t_stamp)): # 在整个data长度内搜索，可以优化
+                    if label_t_stamp[i] <= t_stamp[j] <= label_t_stamp[i + 1]:
+                        temp_sEMG.append(data_sEMG[j])
+                        temp_FMG.append(data_FMG[j])
+                if len(temp_FMG) != 0:
+                    sEMG_data_set.append(temp_sEMG)
+                    FMG_data_set.append(temp_FMG)
+                temp_sEMG = []
+                temp_FMG = []
+            else: # 非活动段，肌肉静息
+                for j in range(len(t_stamp)):
+                    if label_t_stamp[i] <= t_stamp[j] <= label_t_stamp[i + 1]:
+                        temp_sEMG_r.append(data_sEMG[j])
+                        temp_FMG_r.append(data_FMG[j])
+                rsEMG_data_set.append(temp_sEMG)
+                rFMG_data_set.append(temp_FMG)
+                temp_sEMG_r = []
+                temp_FMG_r = []
+        # split rest signal
+
+        pass
+    # end class
     pass
 
 
@@ -282,3 +347,8 @@ def fea_df_norm(features_df, *col_name):
         fea_norm_df = fea_norm_df.drop([name], axis = 1)
         fea_norm_df[name] = s
     return fea_norm_df
+
+
+
+
+

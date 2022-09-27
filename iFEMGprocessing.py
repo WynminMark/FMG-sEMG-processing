@@ -109,8 +109,8 @@ def FMG_analysis(FMG, rFMG, fs):
 def data_segment(raw_data, label):
     # 预处理：滤波；处理时间戳；得到活动段和静息段
     # input:
-    # raw_data: db file from simplewebapp readed as dataframe
-    # label: 
+    # raw_data: dataframe
+    # label: list
     # output:
         
     # 读取数据array
