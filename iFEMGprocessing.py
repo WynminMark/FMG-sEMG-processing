@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Nov  2 16:39:51 2021
-常用基本处理函数库
+Description:
+    original version 常用基本处理函数库
+    calling method in main.py
 @author: WeimyMark
 """
 
 import pandas as pd
 import numpy as np
-#from numpy import *
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 from scipy import signal
 import time
 import datetime
-#import seaborn as sns
 
 
 def read_label(file_path):

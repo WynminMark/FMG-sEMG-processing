@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Sep 14 14:40:28 2021
+Description:
+    origin version GUI + result visualization code.
+    main function defined in iFEMGprocessiong.py
 
 @author: WeimyMark
 """

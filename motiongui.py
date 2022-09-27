@@ -14,6 +14,12 @@ class MotionGuideGUI():
         self.motion_sequence = ["收缩\n", "舒张\n"]
         self.motion_seq_len = len(self.motion_sequence)
         self.motion_index = 0
+        # 倒计时
+        self.count_down_sequence = ["5\n", "4\n", "3\n", "2\n", "1\n"]
+        self.count_down_sequence_len = len(self.count_down_sequence)
+        self.count_down_flag = False
+        self.count_down_index = 0
+        # 设置字体等其他参数
         self.myFont = Font(family="Times New Roman", size=12)
         self.motion_duration = active_duration
         self.relax_duration = relax_duration
@@ -77,6 +83,7 @@ class MotionGuideGUI():
 
     def start(self):
         self.is_suspend = True
+        self.count_down_flag = True
         pass
 
     def stop(self):
@@ -91,24 +98,38 @@ class MotionGuideGUI():
     def gui_loop(self):
         self.init_window_name.update()
 
-        if self.is_suspend:
-            if self.motion_index <= self.motion_seq_len-1:
-                # 打印动作提示
-                self.init_data_Text.delete(1.0, tkinter.END)
-                self.init_data_Text.insert(1.0, self.motion_sequence[self.motion_index])
-                # 
-                self.write_log_to_Text(self.motion_sequence[self.motion_index])
-                self.motion_index += 1
-                self.init_window_name.after(self.motion_duration, self.gui_loop)
+        if self.is_suspend: # 程序开始
+            if self.count_down_flag:    # 判断是否进入倒计时
+                # 进入倒计时
+                if self.count_down_index <= self.count_down_sequence_len - 1:
+                    # 打印倒计时序列
+                    self.init_data_Text.delete(1.0, tkinter.END)
+                    self.init_data_Text.insert(1.0, self.count_down_sequence[self.count_down_index])
+                    self.count_down_index += 1
+                    self.init_window_name.after(1000, self.gui_loop)
+                else:
+                    # 倒计时完成一次后，flag改为false，只在程序开始时进入一次倒计时
+                    self.count_down_flag = False
+                    self.init_window_name.after(1000, self.gui_loop)
             else:
-                self.motion_index = 0
-                self.init_window_name.after(self.relax_duration, self.gui_loop)
-        else:
+                # 不进入倒计时，打印动作提示信息
+                if self.motion_index <= self.motion_seq_len-1:
+                    # 打印动作提示
+                    self.init_data_Text.delete(1.0, tkinter.END)
+                    self.init_data_Text.insert(1.0, self.motion_sequence[self.motion_index])
+                    # 
+                    self.write_log_to_Text(self.motion_sequence[self.motion_index])
+                    self.motion_index += 1
+                    self.init_window_name.after(self.motion_duration, self.gui_loop)
+                else:
+                    self.motion_index = 0
+                    self.init_window_name.after(self.relax_duration, self.gui_loop)
+        else:   # 程序未开始运行
             self.init_window_name.after(0, self.gui_loop)
         #self.init_window_name.after(2000, self.gui_loop)
         pass
         
-    def write_log_to_Text(self,logmsg):
+    def write_log_to_Text(self, logmsg):
         dt_s = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
         dt_ms = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
         logmsg_in = str(dt_ms) +" " + str(logmsg) + "\n"      #换行
@@ -119,7 +140,6 @@ class MotionGuideGUI():
         pass
     # end class
     pass
-
 
 
 def gui_start():
