@@ -58,66 +58,6 @@ class SignalFeature():
                 pass
             pass
         pass
-    
-    def signal_segment_label(self, data_time, label):
-        'segment signal using label file.'
-        # data_time: array
-        # label: output of function read_label(file_path)
-        # reset segment list
-        self.rest_signal_segment = []
-        self.active_signal_segment = []
-
-        #将db文件中的时间转换为ms level时间戳
-        t_stamp = [] # 保存数据文件中时间转换的时间戳，精度ms
-        for t in data_time:
-            t_array = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S,%f")
-            ret_stamp = int(time.mktime(t_array.timetuple()) * 1000 + t_array.microsecond/1000)
-            t_stamp.append(ret_stamp)
-        
-        #处理label.txt中的ms level时间戳
-        # label = read_label("D:\code\data\iFEMG\g-0.txt")
-        label_t_stamp = [] # 保存label文件中时间对应的时间戳，精度ms
-        for x in label:
-            t = x[0] + " " + x[1]
-            t_array = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S.%f")
-            ret_stamp = int(time.mktime(t_array.timetuple()) * 1000 + t_array.microsecond/1000)
-            label_t_stamp.append(ret_stamp)
-        
-        # 比较数据文件和label文件中时间戳，划分肌电活动段
-        # 储存分割好的数据段
-        sEMG_data_set = []
-        FMG_data_set = []
-        rsEMG_data_set = []
-        rFMG_data_set = []
-        # 临时一段静息数据和激活数据
-        temp_sEMG = []
-        temp_FMG = []
-        temp_sEMG_r = [] # 静息数据
-        temp_FMG_r = []
-
-        for i in range(len(label) - 1): # 在label时间范围内
-            if (label[i][2] == "收缩") and (label[i + 1][2] == "舒张"): # 活动段
-                for j in range(len(t_stamp)): # 在整个data长度内搜索，可以优化
-                    if label_t_stamp[i] <= t_stamp[j] <= label_t_stamp[i + 1]:
-                        temp_sEMG.append(data_sEMG[j])
-                        temp_FMG.append(data_FMG[j])
-                if len(temp_FMG) != 0:
-                    sEMG_data_set.append(temp_sEMG)
-                    FMG_data_set.append(temp_FMG)
-                temp_sEMG = []
-                temp_FMG = []
-            else: # 非活动段，肌肉静息
-                for j in range(len(t_stamp)):
-                    if label_t_stamp[i] <= t_stamp[j] <= label_t_stamp[i + 1]:
-                        temp_sEMG_r.append(data_sEMG[j])
-                        temp_FMG_r.append(data_FMG[j])
-                rsEMG_data_set.append(temp_sEMG)
-                rFMG_data_set.append(temp_FMG)
-                temp_sEMG_r = []
-                temp_FMG_r = []
-        # split rest signal
-
-        pass
     # end class
     pass
 
@@ -336,6 +276,91 @@ class AntagonisticsEMGFeature():
     pass
 
 
+class LabeledSignalFeature():
+    'labeled signal feature extraction'
+    def __init__(self, signal_array, signal_time_array, label, sample_frequency):
+        # 初始化数据，数据的时间戳，label
+        self.raw_signal = signal_array
+        self.raw_signal_time = signal_time_array
+        self.label = label
+        self.fs = sample_frequency
+        # 储存分段完成的数据
+        self.rest_signal_segment = []
+        self.active_signal_segment = []
+        pass
+
+    def signal_segment_label(self, abandon_ms):
+        'segment signal using label file.'
+        # data_time: array
+        # label: output of function read_label(file_path)
+        # reset segment list
+
+        # reset
+        self.rest_signal_segment = []
+        self.active_signal_segment = []
+        #将db文件中的时间转换为ms level时间戳
+        t_stamp = [] # 保存数据文件中时间转换的时间戳，精度ms
+        for t in self.raw_signal_time:
+            t_array = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S,%f")
+            ret_stamp = int(time.mktime(t_array.timetuple()) * 1000 + t_array.microsecond/1000)
+            t_stamp.append(ret_stamp)
+        
+        #处理label.txt中的ms level时间戳
+        # label = read_label("D:\code\data\iFEMG\g-0.txt")
+        label_t_stamp = [] # 保存label文件中时间对应的时间戳，精度ms
+        for x in self.label:
+            t = x[0] + " " + x[1]
+            t_array = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S.%f")
+            ret_stamp = int(time.mktime(t_array.timetuple()) * 1000 + t_array.microsecond/1000)
+            label_t_stamp.append(ret_stamp)
+        
+        # 节约搜索时间，每次从上一次搜索结束处开始搜索
+        start_searching_point = 0
+        # 临时一段静息数据和激活数据
+        temp_active_data = []
+        temp_rest_data = []
+
+        for i in range(len(self.label) - 1): # 在label时间范围内
+            if (self.label[i][2] == "收缩") and (self.label[i + 1][2] == "舒张"): # 活动段
+                for j in range(start_searching_point, len(t_stamp)):
+                    if label_t_stamp[i]+abandon_ms <= t_stamp[j] <= label_t_stamp[i + 1]-abandon_ms:
+                        temp_active_data.append(self.raw_signal[j])
+                        start_searching_point = j
+                # 把一段数据存进self分段数据列表
+                if len(temp_active_data) != 0:
+                    self.active_signal_segment.append(temp_active_data)
+                # reset list
+                temp_active_data = []
+            else: # 非活动段，肌肉静息
+                for j in range(start_searching_point, len(t_stamp)):
+                    if label_t_stamp[i]+abandon_ms <= t_stamp[j] <= label_t_stamp[i + 1]-abandon_ms:
+                        temp_rest_data.append(self.raw_signal[j])
+                        start_searching_point = j
+                if len(temp_rest_data) != 0:
+                    self.rest_signal_segment.append(temp_rest_data)
+                temp_rest_data = []
+        pass
+    # end class
+    pass
+
+class LabeledFMGFeature(LabeledSignalFeature):
+    def __init__(self, signal_array, signal_time_array, label, sample_frequency):
+        super().__init__(signal_array, signal_time_array, label, sample_frequency)
+        pass
+
+    # end class
+    pass
+
+
+class LabeledsEMGFeature(LabeledSignalFeature):
+    def __init__(self, signal_array, signal_time_array, label, sample_frequency):
+        super().__init__(signal_array, signal_time_array, label, sample_frequency)
+        pass
+    
+    # end class
+    pass
+
+
 # feature dataframe normalization function
 def fea_df_norm(features_df, *col_name):
     #temp_series = []
@@ -347,8 +372,3 @@ def fea_df_norm(features_df, *col_name):
         fea_norm_df = fea_norm_df.drop([name], axis = 1)
         fea_norm_df[name] = s
     return fea_norm_df
-
-
-
-
-
