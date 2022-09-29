@@ -167,8 +167,8 @@ def data_segment(raw_data, label):
                 if label_t_stamp[i] <= t_stamp[j] <= label_t_stamp[i + 1]:
                     temp_sEMG_r.append(data_sEMG[j])
                     temp_FMG_r.append(data_FMG[j])
-            rsEMG_data_set.append(temp_sEMG)
-            rFMG_data_set.append(temp_FMG)
+            rsEMG_data_set.append(temp_sEMG_r)
+            rFMG_data_set.append(temp_FMG_r)
             temp_sEMG_r = []
             temp_FMG_r = []
     return sEMG_data_set, FMG_data_set, rsEMG_data_set, rFMG_data_set

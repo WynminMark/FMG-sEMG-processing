@@ -323,7 +323,7 @@ class LabeledSignalFeature():
         for i in range(len(self.label) - 1): # 在label时间范围内
             if (self.label[i][2] == "收缩") and (self.label[i + 1][2] == "舒张"): # 活动段
                 for j in range(start_searching_point, len(t_stamp)):
-                    if label_t_stamp[i]+abandon_ms <= t_stamp[j] <= label_t_stamp[i + 1]-abandon_ms:
+                    if label_t_stamp[i]+abandon_ms <= t_stamp[j] <= label_t_stamp[i + 1]:
                         temp_active_data.append(self.raw_signal[j])
                         start_searching_point = j
                 # 把一段数据存进self分段数据列表
@@ -331,9 +331,9 @@ class LabeledSignalFeature():
                     self.active_signal_segment.append(temp_active_data)
                 # reset list
                 temp_active_data = []
-            else: # 非活动段，肌肉静息
+            elif (self.label[i][2] == "舒张") and (self.label[i + 1][2] == "收缩"): # 非活动段，肌肉静息
                 for j in range(start_searching_point, len(t_stamp)):
-                    if label_t_stamp[i]+abandon_ms <= t_stamp[j] <= label_t_stamp[i + 1]-abandon_ms:
+                    if label_t_stamp[i]+abandon_ms <= t_stamp[j] <= label_t_stamp[i + 1]:
                         temp_rest_data.append(self.raw_signal[j])
                         start_searching_point = j
                 if len(temp_rest_data) != 0:
