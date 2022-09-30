@@ -6,7 +6,8 @@ import datetime
 
 from feature_utils import *
 
-
+# 一般数据的处理
+# 使用除label以外的方式分割活动段和非活动端
 class SignalFeature():
     '1.init original signal. 2.signal segment'
     # signal basic parameters
@@ -275,7 +276,7 @@ class AntagonisticsEMGFeature():
     # class end
     pass
 
-
+# 带label数据的处理
 class LabeledSignalFeature():
     'labeled signal feature extraction'
     def __init__(self, signal_array, signal_time_array, label, sample_frequency):
@@ -339,6 +340,8 @@ class LabeledSignalFeature():
                 if len(temp_rest_data) != 0:
                     self.rest_signal_segment.append(temp_rest_data)
                 temp_rest_data = []
+        # 储存特征值/数据段数量
+        self.signal_segment_num = min(len(self.active_signal_segment), len(self.rest_signal_segment))
         pass
     # end class
     pass
@@ -347,6 +350,14 @@ class LabeledFMGFeature(LabeledSignalFeature):
     def __init__(self, signal_array, signal_time_array, label, sample_frequency):
         super().__init__(signal_array, signal_time_array, label, sample_frequency)
         pass
+
+    def average_increase(self):
+        result_list = []
+        for i in range(self.signal_segment_num):
+            temp_rest = np.mean(self.rest_signal_segment[i])
+            temp_active = np.mean(self.active_signal_segment[i])
+            result_list.append((temp_active - temp_rest)/temp_rest)
+        return result_list
 
     # end class
     pass
@@ -357,6 +368,100 @@ class LabeledsEMGFeature(LabeledSignalFeature):
         super().__init__(signal_array, signal_time_array, label, sample_frequency)
         pass
     
+    def feature_mav(self):
+        'increase% of mean absolute value of sEMG'
+        result_list = []
+        for i in range(self.signal_segment_num):
+            temp_rest = np.mean([abs(num) for num in self.rest_signal_segment[i]])
+            temp_active = np.mean([abs(num) for num in self.active_signal_segment[i]])
+            result_list.append((temp_active - temp_rest)/temp_rest)
+        return result_list
+
+    def feature_rms(self):
+        'increase% of root mean square value'
+        result_list = []
+        for i in range(self.signal_segment_num):
+            temp_rest = np.sqrt(np.mean([num**2 for num in self.rest_signal_segment[i]], axis = 0))
+            temp_active = np.sqrt(np.mean([num**2 for num in self.active_signal_segment[i]], axis = 0))
+            result_list.append((temp_active - temp_rest)/temp_rest)
+        return result_list
+
+    def feature_wl(self):
+        'increase% of wave length'
+        # 对每列数据求差分，取绝对值，求和，平均
+        # 实质是计算一列信号变化的剧烈程度，变化、跳动越剧烈，数值越大，信号越平缓，数值越小
+        result_list = []
+        for i in range(self.signal_segment_num):
+            temp_rest = np.sum(np.abs(np.diff(self.rest_signal_segment[i], axis = 0)), axis = 0)/len(self.rest_signal_segment[i])
+            temp_active = np.sum(np.abs(np.diff(self.active_signal_segment[i], axis = 0)), axis = 0)/len(self.active_signal_segment[i])
+            result_list.append((temp_active - temp_rest)/temp_rest)
+        return result_list
+
+    def feature_zc(self, threshold = 10e-7):
+        'increase% of zero-crossing rate'
+        result_list = []
+        for i in range(self.signal_segment_num):
+            # 使用函数计算一段信号过零率
+            temp_rest = calculate_zc(self.rest_signal_segment[i], threshold)
+            temp_active = calculate_zc(self.active_signal_segment[i], threshold)
+            result_list.append((temp_active - temp_rest)/temp_rest)
+            pass
+        return result_list
+
+    def feature_ssc(self, threshold = 10e-7):
+        'return rete of slope sign changes'
+        result_list = []
+        for i in range(self.signal_segment_num):
+            temp_rest = calculate_ssc(self.rest_signal_segment[i], threshold)
+            temp_active = calculate_ssc(self.active_signal_segment[i], threshold)
+            result_list.append((temp_active - temp_rest)/temp_rest)
+            pass
+        return result_list
+
+    def freq_features(self):
+        """
+        feature name:
+            1.mean frequency
+            2.mean power frequency
+        """
+        result_list = []
+        for data in self.active_signal_segment:
+            # calculate psd specture
+            pxx, f = plt.psd(data, NFFT = 256, Fs = self.fs, Fc = 0, detrend = mlab.detrend_none,
+                            window = mlab.window_hanning, noverlap = 0, pad_to = None, 
+                            sides = 'default', scale_by_freq = None, return_line = None)
+            plt.close()
+            '''
+            scipy.signal.welch(x, fs=1.0, window='hann', nperseg=None, noverlap=None, nfft=None, detrend='constant', return_onesided=True, scaling='density', axis=- 1, average='mean')
+            '''
+            # med frequency
+            N = len(f)
+            # calculate (psd curve) integration
+            MSUM = [0]
+            for i in range(1, N, 1):
+                MSUM.append(MSUM[i - 1] + pxx[i - 1] * (f[i] - f[i - 1]))
+            
+            diff = []
+            for i in range(0, N, 1):
+                diff.append(MSUM[i] - MSUM[N-1]/2)
+            for i in range(N):
+                if diff[i] <= 0 and diff[i + 1] >= 0:
+                    mf_x1= i
+                    mf_x2 = i + 1
+                    break
+            # linear interpolation based mf calculation
+            mf = (f[mf_x1]*diff[mf_x2] - f[mf_x2]*diff[mf_x1])/(diff[mf_x2] - diff[mf_x1])
+            
+            # average power frequency
+            FSUM = [0]
+            for i in range(1, N, 1):
+                FSUM.append(FSUM[i - 1] + f[i] * pxx[i - 1] * (f[i] - f[i - 1]))
+            mpf = FSUM[N - 1]/MSUM[N - 1]
+            # power = FSUM[N - 1]
+            # power_time = sum([num*num for num in data])
+            result_list.append([mf, mpf])
+            pass
+        return result_list
     # end class
     pass
 
