@@ -356,7 +356,10 @@ class LabeledFMGFeature(LabeledSignalFeature):
         for i in range(self.signal_segment_num):
             temp_rest = np.mean(self.rest_signal_segment[i])
             temp_active = np.mean(self.active_signal_segment[i])
-            result_list.append((temp_active - temp_rest)/temp_rest)
+            try:
+                result_list.append((temp_active - temp_rest)/temp_rest)
+            except ZeroDivisionError:
+                print("err: FMG rest average value is 0!")
         return result_list
 
     # end class
@@ -374,7 +377,10 @@ class LabeledsEMGFeature(LabeledSignalFeature):
         for i in range(self.signal_segment_num):
             temp_rest = np.mean([abs(num) for num in self.rest_signal_segment[i]])
             temp_active = np.mean([abs(num) for num in self.active_signal_segment[i]])
-            result_list.append((temp_active - temp_rest)/temp_rest)
+            try:
+                result_list.append((temp_active - temp_rest)/temp_rest)
+            except ZeroDivisionError:
+                print("err: sEMG rest mav is 0!")
         return result_list
 
     def feature_rms(self):
@@ -383,7 +389,10 @@ class LabeledsEMGFeature(LabeledSignalFeature):
         for i in range(self.signal_segment_num):
             temp_rest = np.sqrt(np.mean([num**2 for num in self.rest_signal_segment[i]], axis = 0))
             temp_active = np.sqrt(np.mean([num**2 for num in self.active_signal_segment[i]], axis = 0))
-            result_list.append((temp_active - temp_rest)/temp_rest)
+            try:
+                result_list.append((temp_active - temp_rest)/temp_rest)
+            except ZeroDivisionError:
+                print("sEMG rest rms value is 0!")
         return result_list
 
     def feature_wl(self):
@@ -394,7 +403,10 @@ class LabeledsEMGFeature(LabeledSignalFeature):
         for i in range(self.signal_segment_num):
             temp_rest = np.sum(np.abs(np.diff(self.rest_signal_segment[i], axis = 0)), axis = 0)/len(self.rest_signal_segment[i])
             temp_active = np.sum(np.abs(np.diff(self.active_signal_segment[i], axis = 0)), axis = 0)/len(self.active_signal_segment[i])
-            result_list.append((temp_active - temp_rest)/temp_rest)
+            try:
+                result_list.append((temp_active - temp_rest)/temp_rest)
+            except ZeroDivisionError:
+                print("sEMG rest wave length is 0!")
         return result_list
 
     def feature_zc(self, threshold = 10e-7):
@@ -404,7 +416,10 @@ class LabeledsEMGFeature(LabeledSignalFeature):
             # 使用函数计算一段信号过零率
             temp_rest = calculate_zc(self.rest_signal_segment[i], threshold)
             temp_active = calculate_zc(self.active_signal_segment[i], threshold)
-            result_list.append((temp_active - temp_rest)/temp_rest)
+            try:
+                result_list.append((temp_active - temp_rest)/temp_rest)
+            except ZeroDivisionError:
+                print("sEMG rest zero crossing rate is 0!")
             pass
         return result_list
 
@@ -414,7 +429,10 @@ class LabeledsEMGFeature(LabeledSignalFeature):
         for i in range(self.signal_segment_num):
             temp_rest = calculate_ssc(self.rest_signal_segment[i], threshold)
             temp_active = calculate_ssc(self.active_signal_segment[i], threshold)
-            result_list.append((temp_active - temp_rest)/temp_rest)
+            try:
+                result_list.append((temp_active - temp_rest)/temp_rest)
+            except ZeroDivisionError:
+                print("sEMG rest slope sign change rate is 0!")
             pass
         return result_list
 
