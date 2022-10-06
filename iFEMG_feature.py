@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
+from scipy import signal
 import numpy as np
 import time
 import datetime
@@ -9,7 +10,7 @@ from feature_utils import *
 # 一般数据的处理
 # 使用除label以外的方式分割活动段和非活动端
 class SignalFeature():
-    '1.init original signal. 2.signal segment'
+    'super class for: 1.init original signal. 2.signal segment'
     # signal basic parameters
     rest_original_signal = []   # original signal in 1 row []
     active_original_signal = [] # original signal in 1 row []
@@ -59,6 +60,12 @@ class SignalFeature():
                 pass
             pass
         pass
+
+    def band_pass_filter(self, fstop1, fstop2):
+        "band pass filter might induce time delay that need to be dealt with"
+        b, a = signal.butter(8, [2*fstop1/self.fs, 2*fstop2/self.fs], 'bandpass')
+        filted_data = signal.filtfilt(b, a, self.active_original_signal)
+        return filted_data
     # end class
     pass
 
@@ -199,6 +206,7 @@ class sEMGFeature(SignalFeature):
 
 class AntagonisticFMGFeature():
     '''
+    realized based on FMGFeature class
     calculate the difference between FMG signal of antagonistic muscles.
     feature name:
         average_difference
@@ -227,6 +235,7 @@ class AntagonisticFMGFeature():
 
 class AntagonisticsEMGFeature():
     """
+    realized based on sEMGFeature class
     for analysis of antagonistic muscles sEMG signal
     """
     def __init__(self, a_rest_signal, a_active_signal, b_rest_signal, b_active_signal, sample_freq = 1223, window_len = 1223, step_len = 500):
@@ -343,6 +352,10 @@ class LabeledSignalFeature():
         # 储存特征值/数据段数量
         self.signal_segment_num = min(len(self.active_signal_segment), len(self.rest_signal_segment))
         pass
+
+    def band_pass_filt(self):
+        "band pass filter and time delay need to be done"
+        pass
     # end class
     pass
 
@@ -359,6 +372,7 @@ class LabeledFMGFeature(LabeledSignalFeature):
             try:
                 result_list.append((temp_active - temp_rest)/temp_rest)
             except ZeroDivisionError:
+                result_list.append(np.NAN)
                 print("err: FMG rest average value is 0!")
         return result_list
 
@@ -380,6 +394,7 @@ class LabeledsEMGFeature(LabeledSignalFeature):
             try:
                 result_list.append((temp_active - temp_rest)/temp_rest)
             except ZeroDivisionError:
+                result_list.append(np.NAN)
                 print("err: sEMG rest mav is 0!")
         return result_list
 
@@ -392,6 +407,7 @@ class LabeledsEMGFeature(LabeledSignalFeature):
             try:
                 result_list.append((temp_active - temp_rest)/temp_rest)
             except ZeroDivisionError:
+                result_list.append(np.NAN)
                 print("sEMG rest rms value is 0!")
         return result_list
 
@@ -406,6 +422,7 @@ class LabeledsEMGFeature(LabeledSignalFeature):
             try:
                 result_list.append((temp_active - temp_rest)/temp_rest)
             except ZeroDivisionError:
+                result_list.append(np.NAN)
                 print("sEMG rest wave length is 0!")
         return result_list
 
@@ -419,6 +436,7 @@ class LabeledsEMGFeature(LabeledSignalFeature):
             try:
                 result_list.append((temp_active - temp_rest)/temp_rest)
             except ZeroDivisionError:
+                result_list.append(np.NAN)
                 print("sEMG rest zero crossing rate is 0!")
             pass
         return result_list
@@ -432,6 +450,7 @@ class LabeledsEMGFeature(LabeledSignalFeature):
             try:
                 result_list.append((temp_active - temp_rest)/temp_rest)
             except ZeroDivisionError:
+                result_list.append(np.NAN)
                 print("sEMG rest slope sign change rate is 0!")
             pass
         return result_list

@@ -2,10 +2,16 @@
 [toc]
 ## for signal processing and muscle strength estimation
 
-## file input:
- - DB data file from simplePythonWebApp;
- - label file from motion-guide-gui
 
-
-### filter.py
-- real-time filter function for simpleWebApp
+### iFEMG_feature.py
+- Class SignalFeature()
+- Class FMGFeature(SignalFeature)
+- Class sEMGFeature(SignalFeature)
+- Class AntagonisticFMGFeature()
+  - based on Class FMGFeature
+- Class AntagonisticsEMGFeature()
+  - based on Class sEMGFeature()
+- Class LabeledSignalFeature()
+- Class LabeledFMGFeature(LabeledSignalFeature)
+- Class LabeledsEMGFeature(LabeledSignalFeature)
+- Function fea_df_norm(features_df, *col_name)
