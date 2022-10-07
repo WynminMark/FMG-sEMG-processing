@@ -51,6 +51,9 @@ def band_trap_filter(data, fs, f0):
 
 
 def band_pass_filter(data, fs, fstop1, fstop2):
+    """
+    zero-phase filter
+    """
     b, a = signal.butter(8, [2*fstop1/fs, 2*fstop2/fs], 'bandpass')
     filted_data = signal.filtfilt(b, a, data)
     return filted_data

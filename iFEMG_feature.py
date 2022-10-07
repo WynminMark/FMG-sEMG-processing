@@ -6,6 +6,7 @@ import time
 import datetime
 
 from feature_utils import *
+from iFEMGprocessing import band_pass_filter
 
 # 一般数据的处理
 # 使用除label以外的方式分割活动段和非活动端
@@ -383,6 +384,8 @@ class LabeledFMGFeature(LabeledSignalFeature):
 class LabeledsEMGFeature(LabeledSignalFeature):
     def __init__(self, signal_array, signal_time_array, label, sample_frequency):
         super().__init__(signal_array, signal_time_array, label, sample_frequency)
+        # 零相位滤波去除基线漂移
+        self.raw_signal = band_pass_filter(signal_array, self.fs, 10, 500)
         pass
     
     def feature_mav(self):
