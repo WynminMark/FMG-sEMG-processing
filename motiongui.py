@@ -1,7 +1,11 @@
+from asyncio.windows_events import NULL
 import tkinter
+import tkinter.filedialog
 import time
 import datetime
 from tkinter.font import Font
+
+from gui_model_utils import *
 
 # original version motion guide app
 class MotionGuideGUI():
@@ -35,44 +39,17 @@ class MotionGuideGUI():
         self.init_data_label.grid(row = 0, column = 0)
         self.log_label = tkinter.Label(self.init_window_name, text = "Log Message")
         self.log_label.grid(row = 2, column = 0)
-        self.level0label = tkinter.Label(self.init_window_name, text = "Level 0 db.file/label.txt")
-        self.level0label.grid(row = 3, column = 2)
-        self.level1label = tkinter.Label(self.init_window_name, text = "Level 1 db.file/label.txt")
-        self.level1label.grid(row = 4, column = 2)
-        self.level2label = tkinter.Label(self.init_window_name, text = "Level 2 db.file/label.txt")
-        self.level2label.grid(row = 5, column = 2)
-        self.level3label = tkinter.Label(self.init_window_name, text = "Level 3 db.file/label.txt")
-        self.level3label.grid(row = 6, column = 2)
-        self.level4label = tkinter.Label(self.init_window_name, text = "Level 4 db.file/label.txt")
-        self.level4label.grid(row = 7, column = 2)
         # 文本框
         self.init_data_Text = tkinter.Text(self.init_window_name, font=('Arial', 20), width=30, height=2)  #原始数据录入框
         self.init_data_Text.grid(row=1, column=0, rowspan=1, columnspan=1)
         self.log_data_Text = tkinter.Text(self.init_window_name, width=50, height=20)  # 日志框
         self.log_data_Text.grid(row=3, column=0, rowspan=5, columnspan=1)
-        self.db0text = tkinter.Text(self.init_window_name, width = 20, height = 4)
-        self.db0text.grid(row = 3, column = 3, rowspan = 1, columnspan = 1)
-        self.db1text = tkinter.Text(self.init_window_name, width = 20, height = 4)
-        self.db1text.grid(row = 4, column = 3, rowspan = 1, columnspan = 1)
-        self.db2text = tkinter.Text(self.init_window_name, width = 20, height = 4)
-        self.db2text.grid(row = 5, column = 3, rowspan = 1, columnspan = 1)
-        self.db3text = tkinter.Text(self.init_window_name, width = 20, height = 4)
-        self.db3text.grid(row = 6, column = 3, rowspan = 1, columnspan = 1)
-        self.db4text = tkinter.Text(self.init_window_name, width = 20, height = 4)
-        self.db4text.grid(row = 7, column = 3, rowspan = 1, columnspan = 1)
-        self.label0text = tkinter.Text(self.init_window_name, width = 20, height = 4)
-        self.label0text.grid(row = 3, column = 4, rowspan = 1, columnspan = 1)
-        self.label1text = tkinter.Text(self.init_window_name, width = 20, height = 4)
-        self.label1text.grid(row = 4, column = 4, rowspan = 1, columnspan = 1)
-        self.label2text = tkinter.Text(self.init_window_name, width = 20, height = 4)
-        self.label2text.grid(row = 5, column = 4, rowspan = 1, columnspan = 1)
-        self.label3text = tkinter.Text(self.init_window_name, width = 20, height = 4)
-        self.label3text.grid(row = 6, column = 4, rowspan = 1, columnspan = 1)
-        self.label4text = tkinter.Text(self.init_window_name, width = 20, height = 4)
-        self.label4text.grid(row = 7, column = 4, rowspan = 1, columnspan = 1)
-        # 进度条
-        #self.progress_bar = tkinter.Canvas(self.init_window_name, width = self.progress_bar_len, height = 22, bg = "white")
-        #self.progress_bar.place(x=200, y=500)
+        self.db_show_text = tkinter.Text(self.init_window_name, width = 50, height = 2)
+        self.db_show_text.grid(row = 2, column = 3, rowspan = 1, columnspan = 1)
+        self.txt_show_text = tkinter.Text(self.init_window_name, width = 50, height = 2)
+        self.txt_show_text.grid(row = 3, column = 3, rowspan = 1, columnspan = 1)
+        self.model_show_text = tkinter.Text(self.init_window_name, width = 50, height = 2)
+        self.model_show_text.grid(row = 4, column = 3, rowspan = 1, columnspan = 1)
         # 按键，控制开始和停止等功能
         self.start_button = tkinter.Button(self.init_window_name, text = "START", bg = "lightblue", width = 10, command = self.start)#调用内部方法，加()为直接调用
         self.start_button.grid(row = 1, column = 2)
@@ -81,9 +58,11 @@ class MotionGuideGUI():
         self.db_button = tkinter.Button(self.init_window_name, text = "Choose .db file", bg = "lightgreen", width = 20, command = self.choose_db_file)
         self.db_button.grid(row = 2, column = 2)
         self.txt_button = tkinter.Button(self.init_window_name, text = "Choose time file", bg = "lightgreen", width = 20, command = self.choose_timetxt_file)
-        self.txt_button.grid(row = 2, column =  3)
+        self.txt_button.grid(row = 3, column =  2)
+        self.choose_model_button = tkinter.Button(self.init_window_name, text = "choose model file", bg = "lightgreem", width=20, command = self.choose_model)
+        self.choose_model_button.grid(row = 4, column=2)
         self.analyze_button = tkinter.Button(self.init_window_name, text = "Analyze", bg = "lightgreen", width = 10, command = self.analyze)
-        self.analyze_button.grid(row = 2, column = 4)
+        self.analyze_button.grid(row = 6, column = 2)
 
     def start(self):
         self.is_suspend = True
@@ -92,14 +71,26 @@ class MotionGuideGUI():
 
     def stop(self):
         self.is_suspend = False
-        self.count_down_flag = False
+        # self.count_down_flag = False
         # self.log_data_Text.insert(tkinter.END, "stop function here\r\n")
         pass
 
     def choose_db_file(self):
+        self.db_file_path = tkinter.filedialog.askopenfilename()
+        self.db_show_text.delete(1.0, tkinter.END)
+        self.db_show_text.insert(1.0, self.db_file_path)
         pass
 
     def choose_timetxt_file(self):
+        self.txt_file_path = tkinter.filedialog.askopenfilename()
+        self.txt_show_text.delete(1.0, tkinter.END)
+        self.txt_show_text.insert(1.0, self.txt_file_path)
+        pass
+
+    def choose_model(self):
+        self.model_file_path = tkinter.filedialog.askopenfilename()
+        self.model_show_text.delete(1.0, tkinter.END)
+        self.model_show_text.insert(1.0, self.model_file_path)
         pass
     
     def analyze(self):
