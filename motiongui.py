@@ -78,8 +78,12 @@ class MotionGuideGUI():
         self.start_button.grid(row = 1, column = 2)
         self.stop_button = tkinter.Button(self.init_window_name, text = "STOP", bg = "lightgreen", width = 10, command = self.stop)
         self.stop_button.grid(row = 1, column = 3)
+        self.db_button = tkinter.Button(self.init_window_name, text = "Choose .db file", bg = "lightgreen", width = 20, command = self.choose_db_file)
+        self.db_button.grid(row = 2, column = 2)
+        self.txt_button = tkinter.Button(self.init_window_name, text = "Choose time file", bg = "lightgreen", width = 20, command = self.choose_timetxt_file)
+        self.txt_button.grid(row = 2, column =  3)
         self.analyze_button = tkinter.Button(self.init_window_name, text = "Analyze", bg = "lightgreen", width = 10, command = self.analyze)
-        self.analyze_button.grid(row = 1, column = 4)
+        self.analyze_button.grid(row = 2, column = 4)
 
     def start(self):
         self.is_suspend = True
@@ -88,7 +92,14 @@ class MotionGuideGUI():
 
     def stop(self):
         self.is_suspend = False
+        self.count_down_flag = False
         # self.log_data_Text.insert(tkinter.END, "stop function here\r\n")
+        pass
+
+    def choose_db_file(self):
+        pass
+
+    def choose_timetxt_file(self):
         pass
     
     def analyze(self):
