@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from sklearn import preprocessing
 import joblib
 
@@ -6,7 +7,16 @@ from iFEMG_feature import *
 from iFEMGprocessing import read_label
 
 
-def one_channel_analysis(db_file_path, time_file_path, model_file_path):
+def one_channel_analysis(db_file_path,
+                        time_file_path,
+                        model_file_path,
+                        signal_channel,
+                        subject_height,
+                        subject_weight,
+                        subject_age,
+                        subject_gender,
+                        subject_name = "test",
+                        strength_level = np.NaN):
     # read data
     raw_data = pd.read_table(db_file_path, sep = ';', header = None)
     label = read_label(time_file_path)
@@ -16,8 +26,8 @@ def one_channel_analysis(db_file_path, time_file_path, model_file_path):
     # row index 9-16: sEMG signal
     # 读取数据array
     data_time = raw_data[0].values
-    raw_FMG = raw_data[8].values
-    raw_sEMG = raw_data[16].values
+    raw_FMG = raw_data[signal_channel].values
+    raw_sEMG = raw_data[signal_channel+8].values
 
     FMG = LabeledFMGFeature(raw_FMG, data_time, label, 1223)
     FMG.signal_segment_label(300)
@@ -49,8 +59,13 @@ def one_channel_analysis(db_file_path, time_file_path, model_file_path):
     temp_len = len(temp_FMG_fea)
 
     for i in range(temp_len):
-        all_feature_df = all_feature_df.append({'subject_name': 'test',
-                                            'label': 'd5',
+        all_feature_df = all_feature_df.append({'subject_name': subject_name,
+                                            'height(cm)': subject_height,
+                                            'weight(kg)': subject_weight,
+                                            'gender': subject_gender,
+                                            'age': subject_age,
+                                            'sensor_channel': 'bicps_br',
+                                            'label(kg)': strength_level,
                                             'FMG_increase': temp_FMG_fea[i],
                                             'mav': temp_mav[i],
                                             'rms': temp_rms[i],
@@ -61,23 +76,15 @@ def one_channel_analysis(db_file_path, time_file_path, model_file_path):
                                             'mean_power_freq': temp_sEMG_freq_fea[i][1]}, ignore_index=True)
         pass
 
-    # normalization
-    all_fea_norm_df = fea_df_norm(all_feature_df, 'FMG_increase', 'mav', 'rms', 'wave_length', 'zero_crossing', 'slope_sign_change', 'mean_freq', 'mean_power_freq')
-    
-    '''
-    predict muscle strength level
-    problem:
-        scaler and model
-    '''
-    # 索引出数据
-    d5_data = all_feature_df.loc[all_feature_df.loc[:, 'label'] == 'd5'].values[:, 2:]
+    x_data = all_feature_df[['height(cm)', 'weight(kg)', 'gender', 'age', 'label(kg)', 'FMG_increase', 'mav', 'rms', 'wave_length', 'zero_crossing', 'slope_sign_change', 'mean_freq', 'mean_power_freq']].values
+    y_data = all_feature_df['label(kg)'].values
 
-    train_data_r = d5_data
-
-    scaler = preprocessing.StandardScaler().fit(train_data_r)
-    train_data = scaler.transform(train_data_r)
+    # scaler = preprocessing.StandardScaler().fit(x_data)
+    scaler = joblib.load("scaler.save")
+    x_to_model = scaler.transform(x_data)
 
     regression_model = joblib.load(model_file_path)
-    regression_model.predict(train_data)
+    y_predict = regression_model.predict(x_to_model)
+    print("predicted y: ", y_predict)
+    return np.mean(y_predict)
     
-    pass
