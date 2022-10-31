@@ -1,6 +1,6 @@
 """
-能够稳定运行的GUI界面初始版本
-1路iFEMG信号处理和预测
+1.多路iFEMG信号选择，scaler和模型
+2.针对病人的信号采集开始暂停功能
 """
 from ast import Delete
 from asyncio.windows_events import NULL
@@ -10,6 +10,7 @@ import time
 import datetime
 from tkinter.font import Font
 from tkinter import ttk
+from typing_extensions import IntVar
 
 from gui_model_utils import *
 
@@ -48,20 +49,18 @@ class MotionGuideGUI():
         self.log_label.grid(row=2, column=0)
         self.result_label = tkinter.Label(self.init_window_name, font=('Arial', 20), text="Result (kg): ")
         self.result_label.grid(row=0, column=5)
-        self.channel_num_label = tkinter.Label(self.init_window_name, text="Signal Channel: ")
-        self.channel_num_label.grid(row=5, column=2)
         self.subject_name_label = tkinter.Label(self.init_window_name, text="Subject Name: ")
-        self.subject_name_label.grid(row=6, column=2)
+        self.subject_name_label.grid(row=7, column=2)
         self.subject_level_label = tkinter.Label(self.init_window_name, text="Strength Level (kg): ")
-        self.subject_level_label.grid(row=6, column=4)
+        self.subject_level_label.grid(row=7, column=4)
         self.subject_height_label = tkinter.Label(self.init_window_name, text="Subject Height (cm): ")
-        self.subject_height_label.grid(row=7, column=2)
+        self.subject_height_label.grid(row=8, column=2)
         self.subject_weight_label = tkinter.Label(self.init_window_name, text="Subject Weight (kg): ")
-        self.subject_weight_label.grid(row=7, column=4)
+        self.subject_weight_label.grid(row=8, column=4)
         self.subject_age_label = tkinter.Label(self.init_window_name, text="Subject Age: ")
-        self.subject_age_label.grid(row=8, column=2)
+        self.subject_age_label.grid(row=9, column=2)
         self.subject_gender_label = tkinter.Label(self.init_window_name, text="Subject Gender: ")
-        self.subject_gender_label.grid(row=8, column=4)
+        self.subject_gender_label.grid(row=9, column=4)
         # 文本框
         self.init_data_Text = tkinter.Text(self.init_window_name, font=('Arial', 20), width=25, height=2)  #原始数据录入框
         self.init_data_Text.grid(row=1, column=0, rowspan=1, columnspan=1)
@@ -88,19 +87,33 @@ class MotionGuideGUI():
         self.choose_model_button.grid(row = 4, column=2)
         self.analyze_button = tkinter.Button(self.init_window_name, text = "Analyze", bg = "lightgreen", width = 10, command = self.analyze)
         self.analyze_button.grid(row = 1, column = 4)
-        # channel下拉选择框
-        self.channel_num_value = tkinter.StringVar()
-        self.channel_num_value.set(1) # 默认选中CCC==combobox.current(2)
-        self.channel_num_combobox = ttk.Combobox(master=self.init_window_name, # 父容器
-                                                height=10, # 高度,下拉显示的条目数量
-                                                width=20, # 宽度
-                                                state='readonly', # 设置状态 normal(可选可输入)、readonly(只可选)、 disabled
-                                                cursor='arrow', # 鼠标移动时样式 arrow, circle, cross, plus...
-                                                font=('', 20), # 字体
-                                                textvariable=self.channel_num_value, # 通过StringVar设置可改变的值
-                                                values=[1, 2, 3, 4, 5, 6, 7, 8], # 设置下拉框的选项
-                                                )
-        self.channel_num_combobox.grid(row=5, column=3)
+        # channel多选框
+        channel_var_1 = tkinter.IntVar()
+        channel_var_2 = tkinter.IntVar()
+        channel_var_3 = tkinter.IntVar()
+        channel_var_4 = tkinter.IntVar()
+        channel_var_5 = tkinter.IntVar()
+        channel_var_6 = tkinter.IntVar()
+        channel_var_7 = tkinter.IntVar()
+        channel_var_8 = tkinter.IntVar()
+
+        channel1_check_button = tkinter.Checkbutton(self.init_window_name, text="ch1", variable=channel_var_1, onvalue=1, offvalue=0)
+        channel1_check_button.grid(row=5, column=2)
+        channel2_check_button = tkinter.Checkbutton(self.init_window_name, text="ch2", variable=channel_var_2, onvalue=1, offvalue=0)
+        channel2_check_button.grid(row=5, column=3)
+        channel3_check_button = tkinter.Checkbutton(self.init_window_name, text="ch3", variable=channel_var_3, onvalue=1, offvalue=0)
+        channel3_check_button.grid(row=5, column=4)
+        channel4_check_button = tkinter.Checkbutton(self.init_window_name, text="ch4", variable=channel_var_4, onvalue=1, offvalue=0)
+        channel4_check_button.grid(row=5, column=5)
+        channel5_check_button = tkinter.Checkbutton(self.init_window_name, text="ch5", variable=channel_var_5, onvalue=1, offvalue=0)
+        channel5_check_button.grid(row=6, column=2)
+        channel6_check_button = tkinter.Checkbutton(self.init_window_name, text="ch6", variable=channel_var_6, onvalue=1, offvalue=0)
+        channel6_check_button.grid(row=6, column=3)
+        channel7_check_button = tkinter.Checkbutton(self.init_window_name, text="ch7", variable=channel_var_7, onvalue=1, offvalue=0)
+        channel7_check_button.grid(row=6, column=4)
+        channel8_check_button = tkinter.Checkbutton(self.init_window_name, text="ch8", variable=channel_var_8, onvalue=1, offvalue=0)
+        channel8_check_button.grid(row=6, column=5)
+
         # gender下拉选择框
         self.gender_value = tkinter.StringVar()
         self.gender_value.set("Male")
@@ -113,18 +126,18 @@ class MotionGuideGUI():
                                             textvariable=self.gender_value, # 通过StringVar设置可改变的值
                                             values=["Male", "Female"], # 设置下拉框的选项
                                             )
-        self.gender_combobox.grid(row=8, column=5)
+        self.gender_combobox.grid(row=9, column=5)
         # 输入框
         self.name_entry = tkinter.Entry(self.init_window_name)
-        self.name_entry.grid(row=6, column=3)
+        self.name_entry.grid(row=7, column=3)
         self.strength_level_entry = tkinter.Entry(self.init_window_name)
-        self.strength_level_entry.grid(row=6, column=5)
+        self.strength_level_entry.grid(row=7, column=5)
         self.height_entry = tkinter.Entry(self.init_window_name)
-        self.height_entry.grid(row=7, column=3)
+        self.height_entry.grid(row=8, column=3)
         self.weight_entry = tkinter.Entry(self.init_window_name)
-        self.weight_entry.grid(row=7, column=5)
+        self.weight_entry.grid(row=8, column=5)
         self.age_entry = tkinter.Entry(self.init_window_name)
-        self.age_entry.grid(row=8, column=3)
+        self.age_entry.grid(row=9, column=3)
         pass
 
     def start(self):
@@ -155,6 +168,9 @@ class MotionGuideGUI():
         self.model_show_text.delete(1.0, tkinter.END)
         self.model_show_text.insert(1.0, self.model_file_path)
         pass
+
+    def get_channel_num(self):
+        pass
     
     def analyze(self):
         '''
@@ -163,7 +179,8 @@ class MotionGuideGUI():
         self.init_data_Text.delete(1.0, tkinter.END)
         # 获得GUI界面输入
         try:
-            signal_channel_num = int(self.channel_num_combobox.get())
+            # signal_channel_num = int(self.channel_num_combobox.get())
+            # 获得通道数输入
             gender_str = self.gender_combobox.get()
             name_str = self.name_entry.get()
             strength_level_float = float(self.strength_level_entry.get())
