@@ -2,16 +2,14 @@
 1.多路iFEMG信号选择，scaler和模型
 2.针对病人的信号采集开始暂停功能
 """
-from ast import Delete
-from asyncio.windows_events import NULL
+
 import tkinter
 import tkinter.filedialog
 import time
 import datetime
-from tkinter.font import Font
-from tkinter import ttk
-from typing_extensions import IntVar
-
+from tkinter.font import NORMAL, Font
+from tkinter import DISABLED, ttk
+# private 
 from gui_model_utils import *
 
 # original version motion guide app
@@ -39,7 +37,7 @@ class MotionGuideGUI():
 
     def set_init_window(self):
         # 窗口名和尺寸设置
-        self.init_window_name.title("motion guide GUI")#窗口名
+        self.init_window_name.title("Motion Guide GUI")#窗口名
         self.init_window_name.geometry('1300x500+300+500')#窗口尺寸和位置
         self.init_window_name.attributes("-alpha", 0.9)
         # label
@@ -66,11 +64,11 @@ class MotionGuideGUI():
         self.init_data_Text.grid(row=1, column=0, rowspan=1, columnspan=1)
         self.log_data_Text = tkinter.Text(self.init_window_name, width=50, height=20)  # 日志框
         self.log_data_Text.grid(row=3, column=0, rowspan=5, columnspan=1)
-        self.db_show_text = tkinter.Text(self.init_window_name, width=100, height=2)
+        self.db_show_text = tkinter.Text(self.init_window_name, width=100, height=2, state=DISABLED)
         self.db_show_text.grid(row=2, column=3, rowspan=1, columnspan=3)
-        self.txt_show_text = tkinter.Text(self.init_window_name, width=100, height=2)
+        self.txt_show_text = tkinter.Text(self.init_window_name, width=100, height=2, state=DISABLED)
         self.txt_show_text.grid(row=3, column=3, rowspan=1, columnspan=3)
-        self.model_show_text = tkinter.Text(self.init_window_name, width=100, height=2)
+        self.model_show_text = tkinter.Text(self.init_window_name, width=100, height=2, state=DISABLED)
         self.model_show_text.grid(row=4, column=3, rowspan=1, columnspan=3)
         self.result_show_text = tkinter.Text(self.init_window_name, font=('Arial', 20), width=20, height=2)
         self.result_show_text.grid(row=1, column=5)
@@ -83,7 +81,7 @@ class MotionGuideGUI():
         self.db_button.grid(row = 2, column = 2)
         self.txt_button = tkinter.Button(self.init_window_name, text = "Choose time file", bg = "lightgreen", width = 20, command = self.choose_timetxt_file)
         self.txt_button.grid(row = 3, column =  2)
-        self.choose_model_button = tkinter.Button(self.init_window_name, text = "choose model file", bg = "lightgreen", width=20, command = self.choose_model)
+        self.choose_model_button = tkinter.Button(self.init_window_name, text = "Choose model file", bg = "lightgreen", width=20, command = self.choose_model)
         self.choose_model_button.grid(row = 4, column=2)
         self.analyze_button = tkinter.Button(self.init_window_name, text = "Analyze", bg = "lightgreen", width = 10, command = self.analyze)
         self.analyze_button.grid(row = 1, column = 4)
@@ -96,6 +94,7 @@ class MotionGuideGUI():
         channel_var_6 = tkinter.IntVar()
         channel_var_7 = tkinter.IntVar()
         channel_var_8 = tkinter.IntVar()
+        self.channel_var_list = [channel_var_1, channel_var_2, channel_var_3, channel_var_4, channel_var_5, channel_var_6, channel_var_7, channel_var_8]
 
         channel1_check_button = tkinter.Checkbutton(self.init_window_name, text="ch1", variable=channel_var_1, onvalue=1, offvalue=0)
         channel1_check_button.grid(row=5, column=2)
@@ -119,7 +118,7 @@ class MotionGuideGUI():
         self.gender_value.set("Male")
         self.gender_combobox = ttk.Combobox(master=self.init_window_name, # 父容器
                                             height=10, # 高度,下拉显示的条目数量
-                                            width=20, # 宽度
+                                            width=10, # 宽度
                                             state='readonly', # 设置状态 normal(可选可输入)、readonly(只可选)、 disabled
                                             cursor='arrow', # 鼠标移动时样式 arrow, circle, cross, plus...
                                             font=('', 20), # 字体
@@ -147,30 +146,42 @@ class MotionGuideGUI():
 
     def stop(self):
         self.is_suspend = False
-        # self.count_down_flag = False
-        # self.log_data_Text.insert(tkinter.END, "stop function here\r\n")
         pass
 
     def choose_db_file(self):
         self.db_file_path = tkinter.filedialog.askopenfilename()
+        self.db_show_text.config(state=NORMAL)
         self.db_show_text.delete(1.0, tkinter.END)
         self.db_show_text.insert(1.0, self.db_file_path)
+        self.db_show_text.config(state=DISABLED)
         pass
 
     def choose_timetxt_file(self):
         self.txt_file_path = tkinter.filedialog.askopenfilename()
+        self.txt_show_text.config(state=NORMAL)
         self.txt_show_text.delete(1.0, tkinter.END)
         self.txt_show_text.insert(1.0, self.txt_file_path)
+        self.txt_show_text.config(state=DISABLED)
         pass
 
     def choose_model(self):
         self.model_file_path = tkinter.filedialog.askopenfilename()
+        self.model_show_text.config(state=NORMAL)
         self.model_show_text.delete(1.0, tkinter.END)
         self.model_show_text.insert(1.0, self.model_file_path)
+        self.model_show_text.config(state=DISABLED)
         pass
 
     def get_channel_num(self):
-        pass
+        """
+        get channel NO. from CheckButton
+        """
+        # get channel NO. from CheckButton
+        # list: 1 for channel chosed and 0 for not
+        channel_onoff = list(i.get() for i in self.channel_var_list)
+        # get index
+        channel_num = tuple(i for i, e in enumerate(channel_onoff) if e != 0)
+        return channel_num
     
     def analyze(self):
         '''
@@ -179,8 +190,6 @@ class MotionGuideGUI():
         self.init_data_Text.delete(1.0, tkinter.END)
         # 获得GUI界面输入
         try:
-            # signal_channel_num = int(self.channel_num_combobox.get())
-            # 获得通道数输入
             gender_str = self.gender_combobox.get()
             name_str = self.name_entry.get()
             strength_level_float = float(self.strength_level_entry.get())
@@ -191,9 +200,12 @@ class MotionGuideGUI():
             self.init_data_Text.delete(1.0, tkinter.END)
             self.init_data_Text.insert(1.0, "Check Input Information")
             return
+            
+        # 获得通道数输入
+        signal_channel_num = self.get_channel_num()
 
         if gender_str == "Male":
-            analysis_result = one_channel_analysis(db_file_path = self.db_file_path,
+            analysis_result = multi_channel_analysis(db_file_path = self.db_file_path,
                                                     time_file_path = self.txt_file_path,
                                                     model_file_path = self.model_file_path,
                                                     signal_channel = signal_channel_num,
@@ -204,7 +216,7 @@ class MotionGuideGUI():
                                                     subject_name = name_str,
                                                     strength_level = strength_level_float)  # demo中有时不需要输入肌力标签=np.NaN
         elif gender_str == "Female":
-            analysis_result = one_channel_analysis(db_file_path = self.db_file_path,
+            analysis_result = multi_channel_analysis(db_file_path = self.db_file_path,
                                                     time_file_path = self.txt_file_path,
                                                     model_file_path = self.model_file_path,
                                                     signal_channel = signal_channel_num,
@@ -254,7 +266,7 @@ class MotionGuideGUI():
         pass
         
     def write_log_to_Text(self, logmsg):
-        dt_s = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+        # dt_s = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
         dt_ms = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
         logmsg_in = str(dt_ms) +" " + str(logmsg) + "\n"      #换行
         self.log_data_Text.insert(tkinter.END, logmsg_in)
