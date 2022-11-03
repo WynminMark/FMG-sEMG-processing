@@ -14,7 +14,7 @@ from gui_model_utils import *
 
 # original version motion guide app
 class MotionGuideGUI():
-    def __init__(self, init_window_obj, active_duration = 2000, relax_duration = 1000):
+    def __init__(self, init_window_obj, active_duration = 4000, relax_duration = 5000):
         self.init_window_name = init_window_obj
         #self.progress_bar_len = 500
         # 控制小程序的运行和停止
@@ -24,7 +24,7 @@ class MotionGuideGUI():
         self.motion_seq_len = len(self.motion_sequence)
         self.motion_index = 0
         # 倒计时
-        self.count_down_sequence = ["5\n", "4\n", "3\n", "2\n", "1\n"]
+        self.count_down_sequence = ["3\n", "2\n", "1\n"]
         self.count_down_sequence_len = len(self.count_down_sequence)
         self.count_down_flag = False
         self.count_down_index = 0
@@ -32,7 +32,7 @@ class MotionGuideGUI():
         self.myFont = Font(family="Times New Roman", size=12)
         self.motion_duration = active_duration
         self.relax_duration = relax_duration
-        self.f_name = time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime(time.time())) + ".txt"
+        
         pass
 
     def set_init_window(self):
@@ -132,34 +132,6 @@ class MotionGuideGUI():
         self.antagonist_ch3_combobox.grid(row=6, column=4)
         self.antagonist_ch4_combobox = ttk.Combobox(master=self.init_window_name, state="readonly", textvariable=ch8_combobox_value, values=ch_value_list)
         self.antagonist_ch4_combobox.grid(row=7, column=4)
-        '''
-        channel_var_1 = tkinter.IntVar()
-        channel_var_2 = tkinter.IntVar()
-        channel_var_3 = tkinter.IntVar()
-        channel_var_4 = tkinter.IntVar()
-        channel_var_5 = tkinter.IntVar()
-        channel_var_6 = tkinter.IntVar()
-        channel_var_7 = tkinter.IntVar()
-        channel_var_8 = tkinter.IntVar()
-        self.channel_var_list = [channel_var_1, channel_var_2, channel_var_3, channel_var_4, channel_var_5, channel_var_6, channel_var_7, channel_var_8]
-
-        channel1_check_button = tkinter.Checkbutton(self.init_window_name, text="ch1", variable=channel_var_1, onvalue=1, offvalue=0)
-        channel1_check_button.grid(row=5, column=2)
-        channel2_check_button = tkinter.Checkbutton(self.init_window_name, text="ch2", variable=channel_var_2, onvalue=1, offvalue=0)
-        channel2_check_button.grid(row=5, column=3)
-        channel3_check_button = tkinter.Checkbutton(self.init_window_name, text="ch3", variable=channel_var_3, onvalue=1, offvalue=0)
-        channel3_check_button.grid(row=5, column=4)
-        channel4_check_button = tkinter.Checkbutton(self.init_window_name, text="ch4", variable=channel_var_4, onvalue=1, offvalue=0)
-        channel4_check_button.grid(row=5, column=5)
-        channel5_check_button = tkinter.Checkbutton(self.init_window_name, text="ch5", variable=channel_var_5, onvalue=1, offvalue=0)
-        channel5_check_button.grid(row=6, column=2)
-        channel6_check_button = tkinter.Checkbutton(self.init_window_name, text="ch6", variable=channel_var_6, onvalue=1, offvalue=0)
-        channel6_check_button.grid(row=6, column=3)
-        channel7_check_button = tkinter.Checkbutton(self.init_window_name, text="ch7", variable=channel_var_7, onvalue=1, offvalue=0)
-        channel7_check_button.grid(row=6, column=4)
-        channel8_check_button = tkinter.Checkbutton(self.init_window_name, text="ch8", variable=channel_var_8, onvalue=1, offvalue=0)
-        channel8_check_button.grid(row=6, column=5)
-        '''
         # gender下拉选择框
         self.gender_value = tkinter.StringVar()
         self.gender_value.set("Male")
@@ -187,8 +159,15 @@ class MotionGuideGUI():
         pass
 
     def start(self):
+        # start 后重新建立新文件
+        self.f_name = time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime(time.time())) + ".txt"
+        # 开始进入loop循环
         self.is_suspend = True
+        # 开始新一轮倒计时
         self.count_down_flag = True
+        self.count_down_index = 0
+        # 清空上一轮log
+        self.log_data_Text.delete(1.0, tkinter.END)
         pass
 
     def stop(self):
@@ -293,8 +272,9 @@ class MotionGuideGUI():
                     self.count_down_index += 1
                     self.init_window_name.after(1000, self.gui_loop)
                 else:
-                    # 倒计时完成一次后，flag改为false，只在程序开始时进入一次倒计时
+                    # 倒计时完成一次后，flag改为false，进入动作循环
                     self.count_down_flag = False
+                    # 设置1000倒计时结束后2s后开始动作循环
                     self.init_window_name.after(1000, self.gui_loop)
             else:
                 # 不进入倒计时，打印动作提示信息
@@ -319,9 +299,8 @@ class MotionGuideGUI():
         dt_ms = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
         logmsg_in = str(dt_ms) +" " + str(logmsg) + "\n"      #换行
         self.log_data_Text.insert(tkinter.END, logmsg_in)
-        f = open(self.f_name, "a")
-        f.write(logmsg_in)
-        f.close()
+        with open(self.f_name, "a") as f:
+            f.write(logmsg_in)
         pass
     # end class
     pass
@@ -331,7 +310,7 @@ def gui_start():
     # 实例化父窗口
     init_window = tkinter.Tk()
     # 创建motion guide GUI类，设置窗口组间和属性
-    win_a = MotionGuideGUI(init_window)
+    win_a = MotionGuideGUI(init_window, active_duration=4000, relax_duration=0)
     win_a.set_init_window()
     # 运行gui_loop方法
     init_window.after(2000, win_a.gui_loop)
