@@ -301,7 +301,10 @@ class LabeledSignalFeature():
         pass
 
     def signal_segment_label(self, abandon_ms):
-        'segment signal using label file.'
+        '''
+        Segment signal using label file.
+        Abandon_ms: time abandoned when an action starts.
+        '''
         # data_time: array
         # label: output of function read_label(file_path)
         # reset segment list

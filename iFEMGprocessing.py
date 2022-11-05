@@ -213,6 +213,9 @@ def sEMG_analysis(data, fs):
     return mf, mpf, power, power_time
     #return mf, lmp, mmp, hmp, power, mpf, sEMG_integrt, m_rect, sEMG_rms
 
+'''
+该函数在gui_model_utils.py中重新定义了新版本
+增加了实验所需的新功能
 
 def form_feature_df(db_path, label_path, subject, strength_level):
     # 读取数据，
@@ -235,7 +238,7 @@ def form_feature_df(db_path, label_path, subject, strength_level):
                         'power_time': power_time,
                         'FMG_mean': FMG_mean}, ignore_index=True)
     return df
-
+'''
 
 def fea_df_norm(features_df, col_name):
     # 对feature_df 中的 col_name列进行归一化
