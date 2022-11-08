@@ -72,7 +72,7 @@ def form_feature_df(db_file_path,
     """
     Return feature_df of one channel iFEMG signal.
     Input: 
-        sensor_channel: int (1-8)
+        signal_channel: int 1-8
         channel_name: str (muscle name)
     Output:
         unnormalized feature dataframe

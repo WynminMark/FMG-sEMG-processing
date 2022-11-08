@@ -1,6 +1,6 @@
 """
-1.多路iFEMG信号选择，scaler和模型
-2.针对病人的信号采集开始暂停功能
+1.用于健康人多路iFEMG信号肌力分析的GUI界面
+
 """
 
 import tkinter
@@ -29,10 +29,12 @@ class MotionGuideGUI():
         self.count_down_flag = False
         self.count_down_index = 0
         # 设置字体等其他参数
-        self.myFont = Font(family="Times New Roman", size=12)
+        self.my_font = Font(family="Times New Roman", size=18)
         self.motion_duration = active_duration
         self.relax_duration = relax_duration
-        
+        # 枚举分析方法，与函数对应
+        self.analysis_method_list = ["None", "bicps br (1 vs 0)", "bicps br (1 vs 2)", "tricps_br (2 vs 1)"]
+        self.analysis_method_dick = {"bicps br (1 vs 0)": one_channel_analysis,}
         pass
 
     def set_init_window(self):
@@ -59,6 +61,8 @@ class MotionGuideGUI():
         self.subject_gender_label.grid(row=4, column=5)
         self.subject_level_label = tkinter.Label(self.init_window_name, text="Strength Level (kg): ")
         self.subject_level_label.grid(row=5, column=5)
+        self.choose_method_label = tkinter.Label(self.init_window_name, text="Choose analysis method: ")
+        self.choose_method_label.grid(row=3, column=1, columnspan=2)
         self.agonist_ch1_label = tkinter.Label(self.init_window_name, text="Agonist Ch1")
         self.agonist_ch1_label.grid(row=4, column=1)
         self.agonist_ch2_label = tkinter.Label(self.init_window_name, text="Agonist Ch2")
@@ -84,8 +88,6 @@ class MotionGuideGUI():
         self.db_show_text.grid(row=1, column=3, rowspan=1, columnspan=2)
         self.txt_show_text = tkinter.Text(self.init_window_name, width=50, height=2, state=DISABLED)
         self.txt_show_text.grid(row=2, column=3, rowspan=1, columnspan=2)
-        self.model_show_text = tkinter.Text(self.init_window_name, width=50, height=2, state=DISABLED)
-        self.model_show_text.grid(row=3, column=3, rowspan=1, columnspan=2)
         self.result_show_text = tkinter.Text(self.init_window_name, font=('Arial', 10), width=20, height=2)
         self.result_show_text.grid(row=7, column=6)
         # 按键，控制开始和停止等功能
@@ -97,8 +99,6 @@ class MotionGuideGUI():
         self.db_button.grid(row=1, column=1, columnspan=2)
         self.txt_button = tkinter.Button(self.init_window_name, text = "Choose time file", bg = "lightgreen", width = 20, command = self.choose_timetxt_file)
         self.txt_button.grid(row=2, column=1, columnspan=2)
-        self.choose_model_button = tkinter.Button(self.init_window_name, text = "Choose model file", bg = "lightgreen", width=20, command = self.choose_model)
-        self.choose_model_button.grid(row=3, column=1, columnspan=2)
         self.analyze_button = tkinter.Button(self.init_window_name, text = "Analyze", bg = "lightgreen", width = 10, command = self.get_channel_num)
         self.analyze_button.grid(row=6, column=5, columnspan=2)
         # channel choosing Combobox
@@ -135,6 +135,7 @@ class MotionGuideGUI():
         # gender下拉选择框
         self.gender_value = tkinter.StringVar()
         self.gender_value.set("Male")
+        self.gender_value_dick = {"Male": 1, "Female": 0}
         self.gender_combobox = ttk.Combobox(master=self.init_window_name, # 父容器
                                             height=10, # 高度,下拉显示的条目数量
                                             width=10, # 宽度
@@ -145,6 +146,17 @@ class MotionGuideGUI():
                                             values=["Male", "Female"], # 设置下拉框的选项
                                             )
         self.gender_combobox.grid(row=4, column=6)
+        # analysis method下拉选择框
+        self.method_value = tkinter.StringVar()
+        self.method_value.set("None")
+        self.method_combobox = ttk.Combobox(master=self.init_window_name,
+                                            height=10,
+                                            width=20,
+                                            state="readonly",
+                                            font=self.my_font,
+                                            textvariable=self.method_value,
+                                            values=self.analysis_method_list)
+        self.method_combobox.grid(row=3, column=3, rowspan=1, columnspan=2)
         # 输入框
         self.name_entry = tkinter.Entry(self.init_window_name)
         self.name_entry.grid(row=0, column=6)
@@ -190,8 +202,8 @@ class MotionGuideGUI():
         self.txt_show_text.config(state=DISABLED)
         pass
 
-    def choose_model(self):
-        self.model_file_path = tkinter.filedialog.askopenfilename()
+    def choose_analysis_method(self):
+        
         self.model_show_text.config(state=NORMAL)
         self.model_show_text.delete(1.0, tkinter.END)
         self.model_show_text.insert(1.0, self.model_file_path)
@@ -203,7 +215,7 @@ class MotionGuideGUI():
         get channel NO. from CheckButton
         """
         # get channel NO. from CheckButton
-        # list: 1 for channel chosed and 0 for not
+        # list insex 0-3: agonist 1-4; index 4-7: antagonist 1-4
         channel_onoff = list(i.get() for i in self.channel_var_list)
         # get index
         channel_num = tuple(i for i, e in enumerate(channel_onoff) if e != 0)
@@ -218,7 +230,8 @@ class MotionGuideGUI():
         self.init_data_Text.delete(1.0, tkinter.END)
         # 获得GUI界面输入
         try:
-            gender_str = self.gender_combobox.get()
+            method_key = self.method_combobox.get()
+            gender_key = self.gender_combobox.get()
             name_str = self.name_entry.get()
             strength_level_float = float(self.strength_level_entry.get())
             height_float = float(self.height_entry.get())
@@ -232,29 +245,17 @@ class MotionGuideGUI():
         # 获得通道数输入
         signal_channel_num = self.get_channel_num()
 
-        if gender_str == "Male":
-            analysis_result = multi_channel_analysis(db_file_path = self.db_file_path,
-                                                    time_file_path = self.txt_file_path,
-                                                    model_file_path = self.model_file_path,
-                                                    signal_channel = signal_channel_num,
-                                                    subject_height = height_float,
-                                                    subject_weight = weight_float,
-                                                    subject_age = age_float,
-                                                    subject_gender = 1,
-                                                    subject_name = name_str,
-                                                    strength_level = strength_level_float)  # demo中有时不需要输入肌力标签=np.NaN
-        elif gender_str == "Female":
-            analysis_result = multi_channel_analysis(db_file_path = self.db_file_path,
-                                                    time_file_path = self.txt_file_path,
-                                                    model_file_path = self.model_file_path,
-                                                    signal_channel = signal_channel_num,
-                                                    subject_height = height_float,
-                                                    subject_weight = weight_float,
-                                                    subject_age = age_float,
-                                                    subject_gender = 0,
-                                                    subject_name = name_str,
-                                                    strength_level = strength_level_float)  # demo中有时不需要输入肌力标签=np.NaN
-            pass
+        analysis_result = self.analysis_method_dick[method_key](db_file_path = self.db_file_path,
+                                                                time_file_path = self.txt_file_path,
+                                                                model_file_path = self.model_file_path,
+                                                                signal_channel = signal_channel_num,
+                                                                subject_height = height_float,
+                                                                subject_weight = weight_float,
+                                                                subject_age = age_float,
+                                                                subject_gender = self.gender_value_dick[gender_key],
+                                                                subject_name = name_str,
+                                                                strength_level = strength_level_float)
+
         self.result_show_text.delete(1.0, tkinter.END)
         self.result_show_text.insert(1.0, analysis_result)
         pass
