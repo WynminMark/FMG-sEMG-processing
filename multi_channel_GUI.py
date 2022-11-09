@@ -99,7 +99,7 @@ class MotionGuideGUI():
         self.db_button.grid(row=1, column=1, columnspan=2)
         self.txt_button = tkinter.Button(self.init_window_name, text = "Choose time file", bg = "lightgreen", width = 20, command = self.choose_timetxt_file)
         self.txt_button.grid(row=2, column=1, columnspan=2)
-        self.analyze_button = tkinter.Button(self.init_window_name, text = "Analyze", bg = "lightgreen", width = 10, command = self.get_channel_num)
+        self.analyze_button = tkinter.Button(self.init_window_name, text = "Analyze", bg = "lightgreen", width = 10, command = self.analyze)
         self.analyze_button.grid(row=6, column=5, columnspan=2)
         # channel choosing Combobox
         ch1_combobox_value = tkinter.IntVar()
@@ -212,16 +212,17 @@ class MotionGuideGUI():
 
     def get_channel_num(self):
         """
-        get channel NO. from CheckButton
+        get channel NO. 
+        get channel NO. 
+        list insex 0-3: agonist 1-4; index 4-7: antagonist 1-4
+        [7,8,0,0,1,2,0,0]
         """
-        # get channel NO. from CheckButton
-        # list insex 0-3: agonist 1-4; index 4-7: antagonist 1-4
         channel_onoff = list(i.get() for i in self.channel_var_list)
         # get index
-        channel_num = tuple(i for i, e in enumerate(channel_onoff) if e != 0)
-        print("channel ", channel_onoff)
-        print(channel_num)
-        return channel_num
+        # channel_num = tuple(i for i, e in enumerate(channel_onoff) if e != 0)
+        # print("channel ", channel_onoff)
+        # print(channel_num)
+        return channel_onoff
     
     def analyze(self):
         '''
@@ -243,18 +244,18 @@ class MotionGuideGUI():
             return
             
         # 获得通道数输入
-        signal_channel_num = self.get_channel_num()
+        channel_onoff = self.get_channel_num()
+        agonist_channel = tuple(i for i in channel_onoff[0:4] if i != 0)
+        antagonist_channel = tuple(i for i in channel_onoff[4:8] if i != 0)
 
         analysis_result = self.analysis_method_dick[method_key](db_file_path = self.db_file_path,
                                                                 time_file_path = self.txt_file_path,
-                                                                model_file_path = self.model_file_path,
-                                                                signal_channel = signal_channel_num,
+                                                                agonist_signal_channel = agonist_channel,
+                                                                antagonist_signal_channel = antagonist_channel,
                                                                 subject_height = height_float,
                                                                 subject_weight = weight_float,
                                                                 subject_age = age_float,
-                                                                subject_gender = self.gender_value_dick[gender_key],
-                                                                subject_name = name_str,
-                                                                strength_level = strength_level_float)
+                                                                subject_gender = self.gender_value_dick[gender_key])
 
         self.result_show_text.delete(1.0, tkinter.END)
         self.result_show_text.insert(1.0, analysis_result)

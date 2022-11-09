@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from sklearn import preprocessing
 import joblib
 
 from iFEMG_feature import *
@@ -9,23 +8,27 @@ from iFEMGprocessing import read_label
 
 def one_channel_analysis(db_file_path,
                         time_file_path,
-                        model_file_path,
-                        signal_channel,
+                        agonist_signal_channel,
+                        antagonist_signal_channel,
                         subject_height,
                         subject_weight,
                         subject_age,
                         subject_gender,
-                        subject_name = "test",
-                        strength_level = np.NaN):
-
+                        model_file_path = "OneChannelRegression.pkl",
+                        scaler_file_path = "OneChannelScaler.save"):
+    """
+    """
+    signal_channel = agonist_signal_channel[0]
     all_feature_df = form_feature_df(db_file_path, time_file_path, signal_channel, subject_height, subject_weight, subject_age, subject_gender, "bicps_br")
 
-    x_data = all_feature_df[['height(cm)', 'weight(kg)', 'gender', 'age', 'label(kg)', 'FMG_increase', 'mav', 'rms', 'wave_length', 'zero_crossing', 'slope_sign_change', 'mean_freq', 'mean_power_freq']].values
-    y_data = all_feature_df['label(kg)'].values
+    x_data = all_feature_df[['height(cm)', 'weight(kg)', 'gender', 'age', 'FMG_increase', 'mav', 'rms', 'wave_length', 'zero_crossing', 'slope_sign_change', 'mean_freq', 'mean_power_freq']].values
+    # y_data = all_feature_df['label(kg)'].values
 
+    print("shape of x_data: ", x_data.shape)
     # scaler = preprocessing.StandardScaler().fit(x_data)
-    scaler = joblib.load("scaler.save")
+    scaler = joblib.load(scaler_file_path)
     x_to_model = scaler.transform(x_data)
+    print("shape of x_to_model: ", x_to_model.shape)
 
     regression_model = joblib.load(model_file_path)
     y_predict = regression_model.predict(x_to_model)
@@ -36,7 +39,7 @@ def one_channel_analysis(db_file_path,
 def multi_channel_analysis(db_file_path,
                     time_file_path,
                     model_file_path,
-                    signal_channel,
+                    signal_channel_list,
                     subject_height,
                     subject_weight,
                     subject_age,
@@ -44,18 +47,8 @@ def multi_channel_analysis(db_file_path,
                     subject_name = "test",
                     strength_level = np.NaN):
     
-    
-    x_data = all_feature_df[['height(cm)', 'weight(kg)', 'gender', 'age', 'label(kg)', 'FMG_increase', 'mav', 'rms', 'wave_length', 'zero_crossing', 'slope_sign_change', 'mean_freq', 'mean_power_freq']].values
-    y_data = all_feature_df['label(kg)'].values
+    return 
 
-    # scaler = preprocessing.StandardScaler().fit(x_data)
-    scaler = joblib.load("scaler.save")
-    x_to_model = scaler.transform(x_data)
-
-    regression_model = joblib.load(model_file_path)
-    y_predict = regression_model.predict(x_to_model)
-    print("predicted y: ", y_predict)
-    return np.mean(y_predict)
 
 
 def form_feature_df(db_file_path,
