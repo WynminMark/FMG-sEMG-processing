@@ -29,12 +29,14 @@ class MotionGuideGUI():
         self.count_down_flag = False
         self.count_down_index = 0
         # 设置字体等其他参数
-        self.my_font = Font(family="Times New Roman", size=18)
+        self.my_font = Font(family="Times New Roman", size=12)
         self.motion_duration = active_duration
         self.relax_duration = relax_duration
         # 枚举分析方法，与函数对应
         self.analysis_method_list = ["None", "bicps br (1 vs 0)", "bicps br (1 vs 2)", "tricps_br (2 vs 1)"]
         self.analysis_method_dick = {"bicps br (1 vs 0)": one_channel_analysis,}
+        # 动作次数统计
+        self.action_counter = 0
         pass
 
     def set_init_window(self):
@@ -45,8 +47,10 @@ class MotionGuideGUI():
         # label
         self.init_data_label = tkinter.Label(self.init_window_name, font=('Arial', 20), text="Follow The Instructions Bellow")
         self.init_data_label.grid(row=0, column=0)
+        self.action_counter_label = tkinter.Label(self.init_window_name, font=self.my_font, text="动作完成次数统计")
+        self.action_counter_label.grid(row=2, column=0)
         self.log_label = tkinter.Label(self.init_window_name, font=('Arial', 10), text="Log Message")
-        self.log_label.grid(row=2, column=0)
+        self.log_label.grid(row=4, column=0)
         self.result_label = tkinter.Label(self.init_window_name, font=('Arial', 20), text="Result (kg): ")
         self.result_label.grid(row=7, column=5)
         self.subject_name_label = tkinter.Label(self.init_window_name, text="Subject Name: ")
@@ -82,8 +86,10 @@ class MotionGuideGUI():
         # 文本框
         self.init_data_Text = tkinter.Text(self.init_window_name, font=('Arial', 20), width=25, height=2)  #原始数据录入框
         self.init_data_Text.grid(row=1, column=0, rowspan=1, columnspan=1)
+        self.action_counter_text = tkinter.Text(self.init_window_name, font=self.my_font, width=50, height=2)
+        self.action_counter_text.grid(row=3, column=0)
         self.log_data_Text = tkinter.Text(self.init_window_name, width=50, height=20)  # 日志框
-        self.log_data_Text.grid(row=3, column=0, rowspan=5, columnspan=1)
+        self.log_data_Text.grid(row=5, column=0, rowspan=3, columnspan=1)
         self.db_show_text = tkinter.Text(self.init_window_name, width=50, height=2, state=DISABLED)
         self.db_show_text.grid(row=1, column=3, rowspan=1, columnspan=2)
         self.txt_show_text = tkinter.Text(self.init_window_name, width=50, height=2, state=DISABLED)
@@ -180,6 +186,10 @@ class MotionGuideGUI():
         self.count_down_index = 0
         # 清空上一轮log
         self.log_data_Text.delete(1.0, tkinter.END)
+        # 显示动作计数
+        self.action_counter = 0
+        self.action_counter_text.delete(1.0, tkinter.END)
+        self.action_counter_text.insert(1.0, self.action_counter)
         pass
 
     def stop(self):
@@ -281,6 +291,9 @@ class MotionGuideGUI():
             else:
                 # 不进入倒计时，打印动作提示信息
                 if self.motion_index <= self.motion_seq_len-1:
+                    # 打印动作完成次数
+                    self.action_counter_text.delete(1.0, tkinter.END)
+                    self.action_counter_text.insert(1.0, self.action_counter)
                     # 打印动作提示
                     self.init_data_Text.delete(1.0, tkinter.END)
                     self.init_data_Text.insert(1.0, self.motion_sequence[self.motion_index])
@@ -290,6 +303,7 @@ class MotionGuideGUI():
                     self.init_window_name.after(self.motion_duration, self.gui_loop)
                 else:
                     self.motion_index = 0
+                    self.action_counter += 1
                     self.init_window_name.after(self.relax_duration, self.gui_loop)
         else:   # 程序未开始运行
             self.init_window_name.after(0, self.gui_loop)
