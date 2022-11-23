@@ -9,6 +9,7 @@ import time
 import datetime
 from tkinter.font import NORMAL, Font
 from tkinter import DISABLED, ttk
+import sound_utils
 # private 
 from gui_model_utils import *
 
@@ -21,10 +22,12 @@ class MotionGuideGUI():
         self.is_suspend = False
         # 用于循环的动作序列
         self.motion_sequence = ["收缩\n", "舒张\n"]
+        self.instruction_sound = ["wav_files\sound_contract.wav", "wav_files\sound_relax.wav"]
         self.motion_seq_len = len(self.motion_sequence)
         self.motion_index = 0
         # 倒计时
         self.count_down_sequence = ["3\n", "2\n", "1\n"]
+        self.count_down_sound = [r"wav_files\3.wav", r"wav_files\2.wav", r"wav_files\1.wav"]
         self.count_down_sequence_len = len(self.count_down_sequence)
         self.count_down_flag = False
         self.count_down_index = 0
@@ -184,6 +187,8 @@ class MotionGuideGUI():
         # 开始新一轮倒计时
         self.count_down_flag = True
         self.count_down_index = 0
+        # 动作index重置为0，倒计时结束后从收缩开始新一轮
+        self.motion_index = 0
         # 清空上一轮log
         self.log_data_Text.delete(1.0, tkinter.END)
         # 显示动作计数
@@ -281,6 +286,8 @@ class MotionGuideGUI():
                     # 打印倒计时序列
                     self.init_data_Text.delete(1.0, tkinter.END)
                     self.init_data_Text.insert(1.0, self.count_down_sequence[self.count_down_index])
+                    # 播放倒计时声音
+                    sound_utils.play_wav(self.count_down_sound[self.count_down_index])
                     self.count_down_index += 1
                     self.init_window_name.after(1000, self.gui_loop)
                 else:
@@ -297,6 +304,8 @@ class MotionGuideGUI():
                     # 打印动作提示
                     self.init_data_Text.delete(1.0, tkinter.END)
                     self.init_data_Text.insert(1.0, self.motion_sequence[self.motion_index])
+                    # 播放语音提示
+                    sound_utils.play_wav(self.instruction_sound[self.motion_index])
                     # 
                     self.write_log_to_Text(self.motion_sequence[self.motion_index])
                     self.motion_index += 1
