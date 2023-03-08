@@ -1,6 +1,7 @@
 """
 能够稳定运行的GUI界面初始版本
-1路iFEMG信号处理和预测
+添加了对1路iFEMG信号进行处理和预测的接口
+需要使用iFEMG特征计算file
 """
 from ast import Delete
 from asyncio.windows_events import NULL
@@ -10,7 +11,7 @@ import time
 import datetime
 from tkinter.font import Font
 from tkinter import ttk
-
+# private file
 from gui_model_utils import *
 
 # original version motion guide app
