@@ -14,16 +14,22 @@ import matplotlib.mlab as mlab
 from scipy import signal
 import time
 import datetime
+import chardet
 
 
 def read_label(file_path):
     # 读取motion_guide_gui小程序保存的label文件，col1日期，col2时间，col3动作
     label_raw = []
     label_split = []
-    with open(file_path, "r") as f:
+
+    with open(file_path, "rb") as f:
+        encoding_method = chardet.detect(f.read())["encoding"]
+
+    with open(file_path, "r", encoding=encoding_method) as f:
         for line in f.readlines():
             line = line.strip('\n')
             label_raw.append(line)
+
     while '' in label_raw:
         label_raw.remove('')   
     for l in label_raw:
@@ -249,5 +255,11 @@ def fea_df_norm(features_df, col_name):
     fea_norm_df.insert(2, col_name, s)
     return fea_norm_df
 
+if __name__ == '__main__':
+    file_path = r"D:\code\data\iFEMG_data_set\Three_channel_dataset\zpk01\bicps-0kg.txt"
 
+    with open(file_path, "rb") as f:
+        encoding_method = chardet.detect(f.read())["encoding"]
+
+    print(encoding_method)
 
