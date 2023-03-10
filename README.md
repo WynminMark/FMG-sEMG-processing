@@ -18,6 +18,10 @@
 2. regression model training/update
 3. demo
 
+### feature calculation method
+- FMG
+  - average increase: (active_value - rest_value)/rest_value
+
 #### iFEMG_feature.py
 - Class SignalFeature()
 - Class FMGFeature(SignalFeature)
