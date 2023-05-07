@@ -469,10 +469,11 @@ class LabeledsEMGFeature(LabeledSignalFeature):
             1.mean frequency
             2.mean power frequency
         """
-        result_list = []
-        for data in self.active_signal_segment:
+        mf_list = []
+        mpf_list = []
+        for index in range(self.signal_segment_num):
             # calculate psd specture
-            pxx, f = plt.psd(data, NFFT = 256, Fs = self.fs, Fc = 0, detrend = mlab.detrend_none,
+            pxx, f = plt.psd(self.active_signal_segment[index], NFFT = 256, Fs = self.fs, Fc = 0, detrend = mlab.detrend_none,
                             window = mlab.window_hanning, noverlap = 0, pad_to = None, 
                             sides = 'default', scale_by_freq = None, return_line = None)
             plt.close()
@@ -504,9 +505,10 @@ class LabeledsEMGFeature(LabeledSignalFeature):
             mpf = FSUM[N - 1]/MSUM[N - 1]
             # power = FSUM[N - 1]
             # power_time = sum([num*num for num in data])
-            result_list.append([mf, mpf])
+            mf_list.append(mf)
+            mpf_list.append(mpf)
             pass
-        return result_list
+        return mf_list, mpf_list
     # end class
     pass
 
@@ -638,11 +640,13 @@ def FMG_analysis(FMG, rFMG, fs):
 
 
 def data_segment(raw_data, label):
+    '''
     # 预处理：滤波；处理时间戳；得到活动段和静息段
     # input:
     # raw_data: dataframe
     # label: list
     # output:
+    '''
         
     # 读取数据array
     data_time = raw_data[0].values

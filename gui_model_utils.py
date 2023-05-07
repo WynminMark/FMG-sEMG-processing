@@ -17,7 +17,7 @@ def one_channel_analysis(db_file_path,
                         scaler_file_path = "OneChannelScaler.save"):
     """
     输入one channel数据，通过模型输出肌力预测结果
-    
+
     """
     signal_channel = agonist_signal_channel[0]
     all_feature_df = form_feature_df(db_file_path, time_file_path, signal_channel, subject_height, subject_weight, subject_age, subject_gender, "bicps_br")
@@ -88,48 +88,52 @@ def form_feature_df(db_file_path,
     sEMG = LabeledsEMGFeature(raw_sEMG, data_time, label, 1223)
     sEMG.signal_segment_label(abandon_ms)
     # 计算信号特征
-    all_feature_df =pd.DataFrame(columns=('subject_name', 
-                                    'height(cm)',
-                                    'weight(kg)',
-                                    'gender',
-                                    'age',
-                                    'sensor_channel',
-                                    'label(kg)', 
-                                    'FMG_increase', 
-                                    'mav', 
-                                    'rms', 
-                                    'wave_length', 
-                                    'zero_crossing', 
-                                    'slope_sign_change', 
-                                    'mean_freq', 
-                                    'mean_power_freq'))
     temp_FMG_fea = FMG.average_increase()
     temp_mav = sEMG.feature_mav()
     temp_rms = sEMG.feature_rms()
     temp_wl = sEMG.feature_wl()
     temp_zc = sEMG.feature_zc()
     temp_ssc = sEMG.feature_ssc()
-    temp_sEMG_freq_fea = sEMG.freq_features()
+    temp_mf, temp_mpf = sEMG.freq_features()
     temp_len = len(temp_FMG_fea)
 
-    for i in range(temp_len):
-        all_feature_df = all_feature_df.append({'subject_name': subject_name,
-                                            'height(cm)': subject_height,
-                                            'weight(kg)': subject_weight,
-                                            'gender': subject_gender,
-                                            'age': subject_age,
-                                            'sensor_channel': channel_name,
-                                            'label(kg)': strength_level,
-                                            'FMG_increase': temp_FMG_fea[i],
-                                            'mav': temp_mav[i],
-                                            'rms': temp_rms[i],
-                                            'wave_length': temp_wl[i],
-                                            'zero_crossing': temp_zc[i],
-                                            'slope_sign_change': temp_ssc[i],
-                                            'mean_freq': temp_sEMG_freq_fea[i][0],
-                                            'mean_power_freq': temp_sEMG_freq_fea[i][1]}, ignore_index=True)
-        pass
+    subject_name_list = [subject_name for i in range(temp_len)]
+    subject_height_list = [subject_height for i in range(temp_len)]
+    subject_weight_list = [subject_weight for i in range(temp_len)]
+    subject_gender_list = [subject_gender for i in range(temp_len)]
+    subject_age_list = [subject_age for i in range(temp_len)]
+    channel_name_list = [channel_name for i in range(temp_len)]
+    label_list = [strength_level for i in range(temp_len)]
+
+    all_feature_df = pd.DataFrame({'subject_name': subject_name_list,
+                                   'height(cm)': subject_height_list,
+                                   'weight(kg)': subject_weight_list,
+                                   'gender': subject_gender_list,
+                                   'age': subject_age_list,
+                                   'sensor_channel': channel_name_list,
+                                   'label(kg)': label_list,
+                                   'FMG_increase': temp_FMG_fea,
+                                   'mav': temp_mav,
+                                   'rms': temp_rms,
+                                   'wave_length': temp_wl,
+                                   'zero_crossing': temp_zc,
+                                   'slope_sign_change': temp_ssc,
+                                   'mean_freq': temp_mf,
+                                   'mean_power_freq': temp_mpf})
     return all_feature_df
 
 
+if __name__ == '__main__':
+    subject_arg_input = {"subject_height": 182,
+                    "subject_weight": 82,
+                    "subject_age": 21,
+                    "subject_gender": 1,
+                    "subject_name": "Li Peiyang"}
     
+    form_feature_df(db_file_path=r"E:\Data\20230424-单人双次iFEMG肌力等级测试\lpy-1\tri-0.db",
+                    time_file_path=r"E:\Data\20230424-单人双次iFEMG肌力等级测试\lpy-1\tri-0.txt",
+                    signal_channel=1,
+                    channel_name="bicps_br",
+                    abandon_ms=1000,
+                    strength_level=1,
+                    **subject_arg_input)
