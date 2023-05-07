@@ -1,5 +1,8 @@
 import pandas as pd
 import numpy as np
+import os
+
+
 '''
 # groupby()多标签归类
 df1 = pd.DataFrame({"col1":list("ababbc"),
@@ -13,7 +16,7 @@ df2 = df1.groupby(["col1","col2"]).agg({"number1":sum,
 print(df2)
 '''
 
-import os
+
 
 allFileNum = 0
 allFileList = []  # 存放 当前路径 以及当前路径的子路径 下的所有文件

@@ -1,4 +1,7 @@
-
+"""
+用于病人的GUI指示界面
+还没写
+"""
 from multi_channel_GUI import MotionGuideGUI
 
 class PatientGUI(MotionGuideGUI):

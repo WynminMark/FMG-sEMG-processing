@@ -22,6 +22,5 @@ def zpk_calculate_R(a, c):
     return R
 
 if __name__ == '__main__':
-    print(wjh_calculete_R(8.03, 8.07, 15.97))
-    print(zpk_calculate_R(8, 8.04, 16))
+    print(wjh_calculete_R(5.01, 4.99, 9.99))
     pass

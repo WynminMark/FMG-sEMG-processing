@@ -3,7 +3,6 @@ import numpy as np
 import joblib
 # private file
 from iFEMG_feature import *
-from iFEMGprocessing import read_label
 
 
 def one_channel_analysis(db_file_path,
@@ -17,6 +16,8 @@ def one_channel_analysis(db_file_path,
                         model_file_path = "OneChannelRegression.pkl",
                         scaler_file_path = "OneChannelScaler.save"):
     """
+    输入one channel数据，通过模型输出肌力预测结果
+    
     """
     signal_channel = agonist_signal_channel[0]
     all_feature_df = form_feature_df(db_file_path, time_file_path, signal_channel, subject_height, subject_weight, subject_age, subject_gender, "bicps_br")
