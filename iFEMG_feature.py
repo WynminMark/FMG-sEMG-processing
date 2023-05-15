@@ -6,6 +6,7 @@ import time
 import datetime
 import pandas as pd
 import chardet
+import glob
 
 from feature_utils import *
 
@@ -772,11 +773,27 @@ def form_feature_df(db_path, label_path, subject, strength_level):
     return df
 '''
 
-def fea_df_norm(features_df, col_name):
+def fea_df_norm(features_df, *col_name):
     # 对feature_df 中的 col_name列进行归一化
-    s = (features_df[col_name] - features_df[col_name].min())/(features_df[col_name].max() - features_df[col_name].min())
-    #安全删除，如果用del是永久删除
-    fea_norm_df = features_df.drop([col_name], axis = 1)
-    #把规格化的那一列插入到数组中,最开始的14是我把他插到了第15lie
-    fea_norm_df.insert(2, col_name, s)
+    for name in col_name:
+        s = (features_df[name] - features_df[name].min())/(features_df[name].max() - features_df[name].min())
+        #安全删除，如果用del是永久删除
+        fea_norm_df = features_df.drop([name], axis = 1)
+        #把规格化的那一列插入到数组中,最开始的14是我把他插到了第15lie
+        fea_norm_df.insert(2, name, s)
     return fea_norm_df
+
+def df_save_csv(dataframe, filename):
+    '''把dataframe存到文件路径filename处
+    
+    覆写检测，避免损失之前的数据'''
+    # Use this function to search for any files which match your filename
+    files_present = glob.glob(filename)
+    # if no matching files, write to csv, if there are matching files, print statement
+    if not files_present:
+        dataframe.to_csv(filename)
+        print('Done!')
+    else:
+        print('WARNING: This file already exists!' )
+    pass
+
