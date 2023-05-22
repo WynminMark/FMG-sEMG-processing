@@ -7,6 +7,7 @@ import datetime
 import pandas as pd
 import chardet
 import glob
+from sklearn import preprocessing
 
 from feature_utils import *
 
@@ -773,15 +774,36 @@ def form_feature_df(db_path, label_path, subject, strength_level):
     return df
 '''
 
-def fea_df_norm(features_df, *col_name):
-    # 对feature_df 中的 col_name列进行归一化
+
+def fea_df_norm(dataframe, col_name = []):
+    """
+    min-max 归一化
+    对feature_df 中的 col_name列进行归一化
+    """
     for name in col_name:
-        s = (features_df[name] - features_df[name].min())/(features_df[name].max() - features_df[name].min())
-        #安全删除，如果用del是永久删除
-        fea_norm_df = features_df.drop([name], axis = 1)
-        #把规格化的那一列插入到数组中,最开始的14是我把他插到了第15lie
-        fea_norm_df.insert(2, name, s)
-    return fea_norm_df
+        max_value = np.max(dataframe[name])
+        min_value = np.min(dataframe[name])
+        dataframe[name] = (dataframe[name] - min_value)/(max_value - min_value)
+    return dataframe
+
+
+def z_score_norm(dataframe, col_name = []):
+    """
+    z_score 方法归一化
+    基于preprocessing.standscaler()实现
+    
+    输入: dataframe
+    输出: dataframe
+    """
+    all_col_name = list(dataframe)  # 获取所有列名
+    col_name2drop = [i for i in all_col_name if i not in col_name]  # 列名取差集
+    subject_info_df = dataframe[col_name2drop]
+    df_temp = dataframe[col_name]
+    scaler = preprocessing.StandardScaler().fit_transform(df_temp)
+    df_zscore = pd.DataFrame(scaler, index = dataframe.index, columns = col_name)
+    result_df = pd.concat([subject_info_df, df_zscore], axis = 1)
+    return result_df
+
 
 def df_save_csv(dataframe, filename):
     '''把dataframe存到文件路径filename处
