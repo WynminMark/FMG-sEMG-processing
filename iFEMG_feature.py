@@ -8,6 +8,7 @@ import pandas as pd
 import chardet
 import glob
 from sklearn import preprocessing
+import statistics
 
 from feature_utils import *
 
@@ -292,8 +293,16 @@ class AntagonisticsEMGFeature():
 
 # 带label数据的处理
 class LabeledSignalFeature():
-    'labeled signal feature extraction'
+    """
+    处理带动作标签的信号
+    
+    method:
+        signal_segment_label: 对信号进行分段并分别存进两个list中
+    
+    """
     def __init__(self, signal_array, signal_time_array, label, sample_frequency):
+        """
+        """
         # 初始化数据，数据的时间戳，label
         self.raw_signal = signal_array
         self.raw_signal_time = signal_time_array
@@ -305,10 +314,12 @@ class LabeledSignalFeature():
         pass
 
     def signal_segment_label(self, abandon_ms):
-        '''
+        """
         Segment signal using label file.
+        将数据分割成活动段和静息段，分别储存
+
         Abandon_ms: time abandoned when an action starts.
-        '''
+        """
         # data_time: array
         # label: output of function read_label(file_path)
         # reset segment list
@@ -362,17 +373,29 @@ class LabeledSignalFeature():
         pass
 
     def band_pass_filt(self):
-        "band pass filter and time delay need to be done"
+        """
+        band pass filter and time delay need to be done"""
         pass
     # end class
     pass
 
 class LabeledFMGFeature(LabeledSignalFeature):
+    """
+    计算带label的FMG信号特征
+    
+    Method:
+        average_increase: 计算相邻活动段与静息段FMG信号的相对差值
+    """
     def __init__(self, signal_array, signal_time_array, label, sample_frequency):
         super().__init__(signal_array, signal_time_array, label, sample_frequency)
         pass
 
     def average_increase(self):
+        """
+        计算相邻活动段与静息段FMG信号的相对增加量
+        
+        (active-rest)/rest
+        """
         result_list = []
         for i in range(self.signal_segment_num):
             temp_rest = np.mean(self.rest_signal_segment[i])
@@ -383,7 +406,59 @@ class LabeledFMGFeature(LabeledSignalFeature):
                 result_list.append(np.NAN)
                 print("err: FMG rest average value is 0!")
         return result_list
+    
+    def get_average_FMG(self):
+        """
+        获得本段信号的平均值和标准差
 
+        Return:
+            平均值
+            标准差
+        """
+        return np.mean(self.raw_signal), statistics.stdev(self.raw_signal)
+    
+    def get_initial_pressure(self):
+        """
+        获得初始压力值
+        
+        Return: 
+            第一个放松段的FMG最小值
+            第一个放松段的FMG平均值
+        """
+        return min(self.rest_signal_segment[0]), np.mean(self.rest_signal_segment[0])
+    
+    def get_avtive_state_FMG(self):
+        """
+        获得每个活动态FMG的平均值和标准差
+        
+        Return:
+            平均值
+            标准差
+        """
+        ave_FMG = []
+        std_FMG = []
+        for i in range(self.signal_segment_num):
+            ave_FMG.append(np.mean(self.active_signal_segment[i]))
+            std_FMG.append(statistics.stdev(self.active_signal_segment[i]))
+
+        return ave_FMG, std_FMG
+    
+    def get_rest_state_FMG(self):
+        """
+        获得每个放松态FMG的平均值和标准差
+        
+        Return:
+            平均值
+            标准差
+        """
+        ave_FMG = []
+        std_FMG = []
+        for i in range(self.signal_segment_num):
+            ave_FMG.append(np.mean(self.rest_signal_segment[i]))
+            std_FMG.append(statistics.stdev(self.rest_signal_segment[i]))
+
+        return ave_FMG, std_FMG
+    
     # end class
     pass
 
@@ -818,4 +893,36 @@ def df_save_csv(dataframe, filename):
     else:
         print('WARNING: This file already exists!' )
     pass
+
+
+def statistical_outlier_filter(data, thrs = 3):
+    """
+    基于平均值和标准差滤除离群值
+    
+    thrs = 3 默认平均值上下三倍标准差范围外为离群值
+    """
+    # 计算平均值和标准差
+    mean = np.mean(data)
+    std = np.std(data)
+
+    # 筛选离群值
+    filtered_data = data[(data > mean - thrs * std) & (data < mean + thrs * std)]
+    return filtered_data
+
+
+def box_outlier_filter(data, thrs = 1.5):
+    """
+    基于箱线图滤除离群值
+    
+    thrs = 1.5 默认上下四分位数两侧距离超过1.5倍上下四分位数距离为离群值
+    """
+    # 绘制箱线图
+    fig, ax = plt.subplots()
+    ax.boxplot(data)
+
+    # 筛选离群值
+    q1, q3 = np.percentile(data, [25, 75])
+    iqr = q3 - q1
+    filtered_data = [x for x in data if q1 - thrs * iqr < x < q3 + thrs * iqr]
+    return filtered_data
 
