@@ -415,7 +415,7 @@ class LabeledFMGFeature(LabeledSignalFeature):
             平均值
             标准差
         """
-        return np.mean(self.raw_signal), statistics.stdev(self.raw_signal)
+        return np.mean(self.raw_signal), np.std(self.raw_signal)
     
     def get_initial_pressure(self):
         """
@@ -439,7 +439,7 @@ class LabeledFMGFeature(LabeledSignalFeature):
         std_FMG = []
         for i in range(self.signal_segment_num):
             ave_FMG.append(np.mean(self.active_signal_segment[i]))
-            std_FMG.append(statistics.stdev(self.active_signal_segment[i]))
+            std_FMG.append(np.std(self.active_signal_segment[i]))
 
         return ave_FMG, std_FMG
     
@@ -455,7 +455,7 @@ class LabeledFMGFeature(LabeledSignalFeature):
         std_FMG = []
         for i in range(self.signal_segment_num):
             ave_FMG.append(np.mean(self.rest_signal_segment[i]))
-            std_FMG.append(statistics.stdev(self.rest_signal_segment[i]))
+            std_FMG.append(np.std(self.rest_signal_segment[i]))
 
         return ave_FMG, std_FMG
     
