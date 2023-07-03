@@ -849,18 +849,43 @@ def form_feature_df(db_path, label_path, subject, strength_level):
     return df
 '''
 
-
+'''
 def fea_df_norm(dataframe, col_name = []):
     """
-    min-max 归一化
     对feature_df 中的 col_name列进行归一化
+
+    dataframe: 需要进行归一化的dataframe，运行程序后会直接改变dataframe的值
     """
+
     for name in col_name:
         max_value = np.max(dataframe[name])
         min_value = np.min(dataframe[name])
         dataframe[name] = (dataframe[name] - min_value)/(max_value - min_value)
     return dataframe
+'''
+def fea_df_norm(dataframe, col_name = []):
+    """
+    对feature_df 中的指定列分别进行min-max归一化
 
+    INPUT:
+        dataframe: 需要进行归一化的dataframe
+        col_name: 需要进行归一化的列名
+    """
+    all_col_name = list(dataframe)  # 获取所有列名
+    col_name2drop = [i for i in all_col_name if i not in col_name]  # 列名取差集
+    # 暂存不需要进行归一化的数据
+    df_not2norm = dataframe[col_name2drop]
+    # 需要进行归一化的数据
+    df_temp = dataframe[col_name]
+
+    for name in col_name:
+        max_value = np.max(df_temp[name])
+        min_value = np.min(df_temp[name])
+        df_temp[name] = (df_temp[name] - min_value)/(max_value - min_value)
+        pass
+    result_df = pd.concat([df_not2norm, df_temp], axis=1)
+    return result_df
+    
 
 def z_score_norm(dataframe, col_name = []):
     """
@@ -872,10 +897,13 @@ def z_score_norm(dataframe, col_name = []):
     """
     all_col_name = list(dataframe)  # 获取所有列名
     col_name2drop = [i for i in all_col_name if i not in col_name]  # 列名取差集
+    # 暂存不需要进行归一化的数据
     subject_info_df = dataframe[col_name2drop]
+    # 需要进行归一化的数据
     df_temp = dataframe[col_name]
     scaler = preprocessing.StandardScaler().fit_transform(df_temp)
     df_zscore = pd.DataFrame(scaler, index = dataframe.index, columns = col_name)
+    # 将不需要归一化的数据和归一化后的数据横向合并
     result_df = pd.concat([subject_info_df, df_zscore], axis = 1)
     return result_df
 
