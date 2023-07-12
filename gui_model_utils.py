@@ -73,8 +73,12 @@ def form_feature_df(db_file_path,
         unnormalized feature dataframe
     """
     # read data
-    raw_data = pd.read_table(db_file_path, sep = ';', header = None)
-    label = read_label(time_file_path)
+    try:
+        raw_data = pd.read_table(db_file_path, sep = ';', header = None)
+        label = read_label(time_file_path)
+    except FileNotFoundError:
+        print(f"No such file: {db_file_path, time_file_path}")
+        return
     # read db file
     # row index 0: time
     # row index 1-8: FMG signal
@@ -124,18 +128,31 @@ def form_feature_df(db_file_path,
     return all_feature_df
 
 
-def FMG_overview(db_file_path,
-                time_file_path,
-                signal_channel,
+def FMG_overview(db_file_path: str,
+                time_file_path: str,
+                signal_channel: int,
                 abandon_ms = 300,
-                signal_sample_freq = 1223):
+                signal_sample_freq = 1223) -> dict:
     """
     用于描述一段FMG信号的特征，例如平均值，基础值等
     
+    * Return:
+        * `dict`{`ave`: signal_ave_value,
+            `std`: signal_std_value,
+            `initial_pressure_min`: initial_pressure_min,
+            `initial_pressure_ave`: initial_pressure_ave,
+            `act_ave`: act_ave_list,
+            `act_std`: act_std_list,
+            `rst_ave`: rst_ave_list,
+            `rst_std`:rst_std_list}
     """
     # 读取原始数据
-    raw_data = pd.read_table(db_file_path, sep = ';', header = None)
-    label = read_label(time_file_path)
+    try:
+        raw_data = pd.read_table(db_file_path, sep = ';', header = None)
+        label = read_label(time_file_path)
+    except FileNotFoundError:
+        print(f"No such file: {db_file_path, time_file_path}")
+        return
     # read db file
     # row index 0: time
     # row index 1-8: FMG signal
@@ -151,7 +168,14 @@ def FMG_overview(db_file_path,
     act_ave_list, act_std_list = FMG.get_avtive_state_FMG()
     rst_ave_list, rst_std_list = FMG.get_rest_state_FMG()
     print(f"这段信号的平均值是{signal_ave_value}, 标准差为{signal_std_value}, 初始压力最小值为{initial_pressure_min}, 平均值为{initial_pressure_ave}")
-    return {"act_ave": act_ave_list, "act_std": act_std_list, "rst_ave": rst_ave_list, "rst_std":rst_std_list}
+    return {"ave": signal_ave_value,
+            "std": signal_std_value,
+            "initial_pressure_min": initial_pressure_min,
+            "initial_pressure_ave": initial_pressure_ave,
+            "act_ave": act_ave_list,
+            "act_std": act_std_list,
+            "rst_ave": rst_ave_list,
+            "rst_std":rst_std_list}
 
 
 if __name__ == '__main__':

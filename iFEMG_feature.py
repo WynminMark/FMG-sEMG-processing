@@ -408,7 +408,7 @@ class LabeledFMGFeature(LabeledSignalFeature):
     
     def get_average_FMG(self):
         """
-        获得本段信号的平均值和标准差
+        获得整段信号的平均值和标准差
 
         Return:
             平均值
@@ -852,9 +852,9 @@ def df_norm(dataframe: pd.DataFrame, col_name: list = [], method: str = "z_score
     """对dataframe的指定列进行归一化
     
     Args:
-        dataframe:
-        col_name:
-        method: "z_score""min-max"
+        * `dataframe`:
+        * `col_name`:
+        * `method`: 可选`z_score`, `min-max`
     """
     all_col_name = list(dataframe)  # 获取所有列名
     col_name2drop = [i for i in all_col_name if i not in col_name]  # 列名取差集
