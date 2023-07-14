@@ -8,6 +8,7 @@ import pandas as pd
 import chardet
 import glob
 from sklearn import preprocessing
+from typing import Literal
 
 from feature_utils import *
 
@@ -848,10 +849,11 @@ def form_feature_df(db_path, label_path, subject, strength_level):
     return df
 '''
 
-def df_norm(dataframe: pd.DataFrame, col_name: list = [], method: str = "z_score") -> pd.DataFrame:
+def df_norm(dataframe: pd.DataFrame, col_name: list = [], method: Literal["z_score", "min-max"] = ...) -> pd.DataFrame:
     """对dataframe的指定列进行归一化
     
     Args:
+    ------
         * `dataframe`:
         * `col_name`:
         * `method`: 可选`z_score`, `min-max`
@@ -877,12 +879,13 @@ def df_norm(dataframe: pd.DataFrame, col_name: list = [], method: str = "z_score
     # 对不需归一化和归一化后的df进行合并
     result_df = pd.concat([df_not2norm, df_normed], axis=1)
     return result_df
-
+'''
 def fea_df_norm(dataframe, col_name = []):
     """
     对feature_df 中的指定列分别进行min-max归一化
 
-    INPUT:
+    Args:
+    ------
         dataframe: 需要进行归一化的dataframe
         col_name: 需要进行归一化的列名
     """
@@ -921,7 +924,7 @@ def z_score_norm(dataframe, col_name = []):
     # 将不需要归一化的数据和归一化后的数据横向合并
     result_df = pd.concat([subject_info_df, df_zscore], axis = 1)
     return result_df
-
+'''
 
 def df_save_csv(dataframe, filename):
     '''把dataframe存到文件路径filename处

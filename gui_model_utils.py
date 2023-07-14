@@ -131,12 +131,13 @@ def form_feature_df(db_file_path,
 def FMG_overview(db_file_path: str,
                 time_file_path: str,
                 signal_channel: int,
-                abandon_ms = 300,
-                signal_sample_freq = 1223) -> dict:
+                abandon_ms: int = 300,
+                signal_sample_freq: int = 1223) -> dict:
     """
     用于描述一段FMG信号的特征，例如平均值，基础值等
     
     * Return:
+    ------
         * `dict`{`ave`: signal_ave_value,
             `std`: signal_std_value,
             `initial_pressure_min`: initial_pressure_min,
@@ -167,7 +168,7 @@ def FMG_overview(db_file_path: str,
     initial_pressure_min, initial_pressure_ave = FMG.get_initial_pressure()
     act_ave_list, act_std_list = FMG.get_avtive_state_FMG()
     rst_ave_list, rst_std_list = FMG.get_rest_state_FMG()
-    print(f"这段信号的平均值是{signal_ave_value}, 标准差为{signal_std_value}, 初始压力最小值为{initial_pressure_min}, 平均值为{initial_pressure_ave}")
+    # print(f"这段信号的平均值是{signal_ave_value}, 标准差为{signal_std_value}, 初始压力最小值为{initial_pressure_min}, 平均值为{initial_pressure_ave}")
     return {"ave": signal_ave_value,
             "std": signal_std_value,
             "initial_pressure_min": initial_pressure_min,
@@ -177,6 +178,60 @@ def FMG_overview(db_file_path: str,
             "rst_ave": rst_ave_list,
             "rst_std":rst_std_list}
 
+
+def FMG_overview_df(db_file_path: str,
+                    time_file_path: str,
+                    signal_channel: int,
+                    abandon_ms: int = 300,
+                    signal_sample_freq: int = 1223) -> pd.DataFrame:
+    """
+    将FMG_overview的输出转换为dataframe,描述一段FMG信号的特征，例如平均值，基础值等
+    
+    return
+    ------
+    * result_df
+    """
+    result_dict = FMG_overview(db_file_path, time_file_path, signal_channel, abandon_ms, signal_sample_freq)
+    ave = result_dict["ave"]
+    std = result_dict["std"]
+    initial_pressure_min = result_dict["initial_pressure_min"]
+    initial_pressure_ave = result_dict["initial_pressure_ave"]
+    act_ave_list = result_dict["act_ave"]
+    act_std_list = result_dict["act_std"]
+    rst_ave_list = result_dict["rst_ave"]
+    rst_std_list = result_dict["rst_std"]
+    # 获得df长度
+    data_len = len(act_ave_list)
+
+    # 获得特征值df
+    result_df = pd.DataFrame({"ave": [ave for i in range(data_len)],
+                              "std": [std for i in range(data_len)],
+                              "initial_pressure_min": [initial_pressure_min for i in range(data_len)],
+                              "initial_pressure_ave": [initial_pressure_ave for i in range(data_len)],
+                              "act_ave": act_ave_list,
+                              "act_std": act_std_list,
+                              "rst_ave": rst_ave_list,
+                              "rst_std": rst_std_list})
+    return result_df
+
+
+def form_sbj_info_df(df_len: int, **subject_info) -> pd.DataFrame:
+    """
+    把受试者的信息扩展成与特征df相同长度的df
+    
+    Args:
+    ------
+    * `df_len`: 需要的df长度
+    * `subject_info`: 收拾者的信息，以**{}方式输入
+    """
+    # 扩展subject_info字典中value的维度，使其与df长度一致，获得新字典
+    sbj_info_dict = {}
+    for key, value in subject_info.items():
+        sbj_info_dict[key] = [value for i in range(df_len)]
+        pass
+    # 获得受试者个人信息df
+    sbj_info_df = pd.DataFrame(sbj_info_dict)
+    return sbj_info_df
 
 if __name__ == '__main__':
     subject_arg_input = {"subject_height": 182,
