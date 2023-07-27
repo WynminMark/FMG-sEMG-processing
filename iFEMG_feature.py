@@ -7,6 +7,7 @@ import datetime
 import pandas as pd
 import chardet
 import glob
+import scipy.io as sio
 from sklearn import preprocessing
 from typing import Literal
 
@@ -972,3 +973,21 @@ def box_outlier_filter(data, thrs = 1.5):
     filtered_data = [x for x in data if q1 - thrs * iqr < x < q3 + thrs * iqr]
     return filtered_data
 
+
+def db2mat(folder_path, file_name = []) -> None:
+    """
+    将folder_path路径中xcd-8+8channel.db文件中的数据转存为.mat文件, 方便Matlab进行读取操作
+    Args
+    ------
+    * `folder_path`
+    * `file_name` = ["bi-0", "bi-05", "bi-1", "bi-2"]|["tri-0", "tri-05", "tri-1"]
+    """
+    for name in file_name:
+        # 读取文件路径中的数据
+        raw_data = pd.read_table(folder_path + "\\" + name + ".db", sep = ';', header = None)
+        # 提取第1-16路数据，转换为float64类型
+        data = raw_data.iloc[:, 1:17].values.astype(np.float64)
+        mat_name = name.replace("-", "_")
+        sio.savemat(folder_path + "\\" + mat_name + ".mat", {mat_name: data})
+        pass
+    return
