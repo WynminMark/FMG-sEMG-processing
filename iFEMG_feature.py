@@ -528,7 +528,7 @@ class LabeledsEMGFeature(LabeledSignalFeature):
         return result_list
 
     def feature_ssc(self, threshold = 10e-7):
-        'return rete of slope sign changes'
+        'return increase% of slope sign changes rate'
         result_list = []
         for i in range(self.signal_segment_num):
             temp_rest = calculate_ssc(self.rest_signal_segment[i], threshold)
@@ -637,13 +637,16 @@ def pdtable_read_db(file_path):
     return data
 
 
-def band_trap_filter(data, fs, f0):
-    '''
-    # 陷波器
+def band_trap_filter(data: np.array, fs: int, f0: int):
+    """
+    基于filtfilt函数实现的零相位陷波器
 
-    # fs: sample frequency
-    # f0: the frequency to be filtered out
-    '''
+    Args:
+    ------
+    * `data`: array like signal.
+    * `fs`: sample frequency.
+    * `f0`: the frequency to be filtered out.
+    """
     Q = 30
     w0 = f0/(fs/2)
     b, a = signal.iirnotch(w0, Q)
@@ -652,11 +655,18 @@ def band_trap_filter(data, fs, f0):
     return filtered_data
 
 
-def band_pass_filter(data, fs, fstop1, fstop2):
+def band_pass_filter(data: np.array, fs: int, fstop1: int, fstop2: int, order: int = 8):
     """
-    zero-phase filter
+    基于filtfilt和butter实现的零相位带通滤波器
+
+    Args:
+    ------
+    * `data`: array like signal.
+    * `fs`: sample frequency.
+    * `fsopt1`/`fstop2`: low/high cut-off frequency
+    * `order`: 巴特沃斯滤波器阶数
     """
-    b, a = signal.butter(8, [2*fstop1/fs, 2*fstop2/fs], 'bandpass')
+    b, a = signal.butter(order, [2*fstop1/fs, 2*fstop2/fs], 'bandpass')
     filted_data = signal.filtfilt(b, a, data)
     return filted_data
 

@@ -215,6 +215,43 @@ def FMG_overview_df(db_file_path: str,
     return result_df
 
 
+def sEMG_overview_df(db_file_path: str,
+                     time_file_path: str,
+                     signal_channel: int,
+                     abandon_ms: int = 300,
+                     signal_sample_freq: int = 1223) -> pd.DataFrame:
+    """
+    将FMG_overview的输出转换为dataframe,描述一段FMG信号的特征，例如平均值，基础值等
+    
+    return
+    ------
+    * result_df
+    """
+    result_dict = FMG_overview(db_file_path, time_file_path, signal_channel, abandon_ms, signal_sample_freq)
+    ave = result_dict["ave"]
+    std = result_dict["std"]
+    initial_pressure_min = result_dict["initial_pressure_min"]
+    initial_pressure_ave = result_dict["initial_pressure_ave"]
+    act_ave_list = result_dict["act_ave"]
+    act_std_list = result_dict["act_std"]
+    rst_ave_list = result_dict["rst_ave"]
+    rst_std_list = result_dict["rst_std"]
+    # 获得df长度
+    data_len = len(act_ave_list)
+
+    # 获得特征值df
+    result_df = pd.DataFrame({"ave": [ave for i in range(data_len)],
+                              "std": [std for i in range(data_len)],
+                              "initial_pressure_min": [initial_pressure_min for i in range(data_len)],
+                              "initial_pressure_ave": [initial_pressure_ave for i in range(data_len)],
+                              "act_ave": act_ave_list,
+                              "act_std": act_std_list,
+                              "rst_ave": rst_ave_list,
+                              "rst_std": rst_std_list})
+    return result_df
+
+
+
 def form_sbj_info_df(df_len: int, **subject_info) -> pd.DataFrame:
     """
     把受试者的信息扩展成与特征df相同长度的df
