@@ -471,75 +471,137 @@ class LabeledsEMGFeature(LabeledSignalFeature):
         self.raw_signal = band_pass_filter(signal_array, self.fs, 10, 500)
         pass
     
-    def feature_mav(self):
-        'increase% of mean absolute value of sEMG'
-        result_list = []
-        for i in range(self.signal_segment_num):
-            temp_rest = np.mean([abs(num) for num in self.rest_signal_segment[i]])
-            temp_active = np.mean([abs(num) for num in self.active_signal_segment[i]])
-            try:
-                result_list.append((temp_active - temp_rest)/temp_rest)
-            except ZeroDivisionError:
-                result_list.append(np.NAN)
-                print("err: sEMG rest mav is 0!")
-        return result_list
+    def feature_mav(self, abs = False):
+        """
+        计算mean absolute value of sEMG
 
-    def feature_rms(self):
-        'increase% of root mean square value'
-        result_list = []
-        for i in range(self.signal_segment_num):
-            temp_rest = np.sqrt(np.mean([num**2 for num in self.rest_signal_segment[i]], axis = 0))
-            temp_active = np.sqrt(np.mean([num**2 for num in self.active_signal_segment[i]], axis = 0))
-            try:
-                result_list.append((temp_active - temp_rest)/temp_rest)
-            except ZeroDivisionError:
-                result_list.append(np.NAN)
-                print("sEMG rest rms value is 0!")
-        return result_list
+        `abs`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
+        """
+        if abs:
+            result_act = []
+            result_rst = []
+            for i in range(self.signal_segment_num):
+                result_rst.append(np.mean([abs(num) for num in self.rest_signal_segment[i]]))
+                result_act.append(np.mean([abs(num) for num in self.active_signal_segment[i]]))
+            return result_act, result_rst
+        else:
+            result_list = []
+            for i in range(self.signal_segment_num):
+                temp_rest = np.mean([abs(num) for num in self.rest_signal_segment[i]])
+                temp_active = np.mean([abs(num) for num in self.active_signal_segment[i]])
+                try:
+                    result_list.append((temp_active - temp_rest)/temp_rest)
+                except ZeroDivisionError:
+                    result_list.append(np.NAN)
+                    print("err: sEMG rest mav is 0!")
+            return result_list
+        
 
-    def feature_wl(self):
-        'increase% of wave length'
+    def feature_rms(self, abs = False):
+        """
+        计算root mean square value
+
+        `abs`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
+        """
+        if abs:
+            result_act = []
+            result_rst = []
+            for i in range(self.signal_segment_num):
+                result_rst.append(np.sqrt(np.mean([num**2 for num in self.rest_signal_segment[i]], axis = 0)))
+                result_act.append(np.sqrt(np.mean([num**2 for num in self.active_signal_segment[i]], axis = 0)))
+            return result_act, result_rst
+        else:
+            result_list = []
+            for i in range(self.signal_segment_num):
+                temp_rest = np.sqrt(np.mean([num**2 for num in self.rest_signal_segment[i]], axis = 0))
+                temp_active = np.sqrt(np.mean([num**2 for num in self.active_signal_segment[i]], axis = 0))
+                try:
+                    result_list.append((temp_active - temp_rest)/temp_rest)
+                except ZeroDivisionError:
+                    result_list.append(np.NAN)
+                    print("sEMG rest rms value is 0!")
+            return result_list
+
+    def feature_wl(self, abs = False):
+        """
+        计算wave length
+        
+        `abs`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
+        """
         # 对每列数据求差分，取绝对值，求和，平均
         # 实质是计算一列信号变化的剧烈程度，变化、跳动越剧烈，数值越大，信号越平缓，数值越小
-        result_list = []
-        for i in range(self.signal_segment_num):
-            temp_rest = np.sum(np.abs(np.diff(self.rest_signal_segment[i], axis = 0)), axis = 0)/len(self.rest_signal_segment[i])
-            temp_active = np.sum(np.abs(np.diff(self.active_signal_segment[i], axis = 0)), axis = 0)/len(self.active_signal_segment[i])
-            try:
-                result_list.append((temp_active - temp_rest)/temp_rest)
-            except ZeroDivisionError:
-                result_list.append(np.NAN)
-                print("sEMG rest wave length is 0!")
-        return result_list
+        if abs:
+            result_act = []
+            result_rst = []
+            for i in range(self.signal_segment_num):
+                result_rst.append(np.sum(np.abs(np.diff(self.rest_signal_segment[i], axis = 0)), axis = 0)/len(self.rest_signal_segment[i]))
+                result_act.append(np.sum(np.abs(np.diff(self.active_signal_segment[i], axis = 0)), axis = 0)/len(self.active_signal_segment[i]))
+            return result_act, result_rst
+        else:
+            result_list = []
+            for i in range(self.signal_segment_num):
+                temp_rest = np.sum(np.abs(np.diff(self.rest_signal_segment[i], axis = 0)), axis = 0)/len(self.rest_signal_segment[i])
+                temp_active = np.sum(np.abs(np.diff(self.active_signal_segment[i], axis = 0)), axis = 0)/len(self.active_signal_segment[i])
+                try:
+                    result_list.append((temp_active - temp_rest)/temp_rest)
+                except ZeroDivisionError:
+                    result_list.append(np.NAN)
+                    print("sEMG rest wave length is 0!")
+            return result_list
 
-    def feature_zc(self, threshold = 10e-7):
-        'increase% of zero-crossing rate'
-        result_list = []
-        for i in range(self.signal_segment_num):
-            # 使用函数计算一段信号过零率
-            temp_rest = calculate_zc(self.rest_signal_segment[i], threshold)
-            temp_active = calculate_zc(self.active_signal_segment[i], threshold)
-            try:
-                result_list.append((temp_active - temp_rest)/temp_rest)
-            except ZeroDivisionError:
-                result_list.append(np.NAN)
-                print("sEMG rest zero crossing rate is 0!")
-            pass
-        return result_list
+    def feature_zc(self, threshold = 10e-7, abs = False):
+        """
+        计算zero-crossing rate
+        
+        `abs`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
+        """
+        if abs:
+            result_act = []
+            result_rst = []
+            for i in range(self.signal_segment_num):
+                # 使用函数计算一段信号过零率
+                result_rst.append(calculate_zc(self.rest_signal_segment[i], threshold))
+                result_act.append(calculate_zc(self.active_signal_segment[i], threshold))
+            return result_act, result_rst
+        else:
+            result_list = []
+            for i in range(self.signal_segment_num):
+                # 使用函数计算一段信号过零率
+                temp_rest = calculate_zc(self.rest_signal_segment[i], threshold)
+                temp_active = calculate_zc(self.active_signal_segment[i], threshold)
+                try:
+                    result_list.append((temp_active - temp_rest)/temp_rest)
+                except ZeroDivisionError:
+                    result_list.append(np.NAN)
+                    print("sEMG rest zero crossing rate is 0!")
+                pass
+            return result_list
 
-    def feature_ssc(self, threshold = 10e-7):
-        'return increase% of slope sign changes rate'
-        result_list = []
-        for i in range(self.signal_segment_num):
-            temp_rest = calculate_ssc(self.rest_signal_segment[i], threshold)
-            temp_active = calculate_ssc(self.active_signal_segment[i], threshold)
-            try:
-                result_list.append((temp_active - temp_rest)/temp_rest)
-            except ZeroDivisionError:
-                result_list.append(np.NAN)
-                print("sEMG rest slope sign change rate is 0!")
-            pass
-        return result_list
+    def feature_ssc(self, threshold = 10e-7, abs = False):
+        """
+        计算slope sign changes rate
+        
+        `abs`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
+        """
+        if abs:
+            result_act = []
+            result_rst = []
+            for i in range(self.signal_segment_num):
+                result_rst.append(calculate_ssc(self.rest_signal_segment[i], threshold))
+                result_act.append(calculate_ssc(self.active_signal_segment[i], threshold))
+            return result_act, result_rst
+        else:
+            result_list = []
+            for i in range(self.signal_segment_num):
+                temp_rest = calculate_ssc(self.rest_signal_segment[i], threshold)
+                temp_active = calculate_ssc(self.active_signal_segment[i], threshold)
+                try:
+                    result_list.append((temp_active - temp_rest)/temp_rest)
+                except ZeroDivisionError:
+                    result_list.append(np.NAN)
+                    print("sEMG rest slope sign change rate is 0!")
+                pass
+            return result_list
 
     def freq_features(self):
         """
@@ -587,6 +649,7 @@ class LabeledsEMGFeature(LabeledSignalFeature):
             mpf_list.append(mpf)
             pass
         return mf_list, mpf_list
+    
     # end class
     pass
 

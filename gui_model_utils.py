@@ -20,7 +20,7 @@ def one_channel_analysis(db_file_path,
 
     """
     signal_channel = agonist_signal_channel[0]
-    all_feature_df = form_feature_df(db_file_path, time_file_path, signal_channel, subject_height, subject_weight, subject_age, subject_gender, "bicps_br")
+    #all_feature_df = form_feature_df(db_file_path, time_file_path, signal_channel, subject_height, subject_weight, subject_age, subject_gender, "bicps_br")
 
     x_data = all_feature_df[['height(cm)', 'weight(kg)', 'gender', 'age', 'FMG_increase', 'mav', 'rms', 'wave_length', 'zero_crossing', 'slope_sign_change', 'mean_freq', 'mean_power_freq']].values
     # y_data = all_feature_df['label(kg)'].values
@@ -50,8 +50,7 @@ def multi_channel_analysis(db_file_path,
     
     return 
 
-
-
+'''
 def form_feature_df(db_file_path,
                     time_file_path,
                     signal_channel,
@@ -65,10 +64,13 @@ def form_feature_df(db_file_path,
                     strength_level = np.NaN,
                     signal_sample_freq = 1223):
     """
+    计算一通道iFEMG信号的特征值
     Return feature_df of one channel iFEMG signal.
-    Input: 
-        signal_channel: int 1-8
-        channel_name: str (muscle name)
+    
+    Args:
+    ------
+    * `gnal_channel`: int 1-8
+    * `channel_name`: str (muscle name)
     Output:
         unnormalized feature dataframe
     """
@@ -125,6 +127,90 @@ def form_feature_df(db_file_path,
                                    'slope_sign_change': temp_ssc,
                                    'mean_freq': temp_mf,
                                    'mean_power_freq': temp_mpf})
+    return all_feature_df
+'''
+def form_feature_df(db_file_path: str,
+                    time_file_path: str,
+                    channel_name_dic: dict,
+                    subject_height,
+                    subject_weight,
+                    subject_age,
+                    subject_gender,
+                    abandon_ms = 300,
+                    subject_name = "test",
+                    strength_level = np.NaN,
+                    signal_sample_freq = 1223):
+    """
+    计算一组.db & time.txt文件中所有通道iFEMG信号的特征值，肌肉名称与信号通道使用dict传入
+    
+    Args:
+    ------
+    * `channel_name_dict`: {"muscle_name": channel_num}
+    Output:
+        unnormalized feature dataframe
+    """
+    # read data
+    try:
+        raw_data = pd.read_table(db_file_path, sep = ';', header = None)
+        label = read_label(time_file_path)
+    except FileNotFoundError:
+        print(f"No such file: {db_file_path, time_file_path}")
+        return
+    # read db file
+    # row index 0: time
+    # row index 1-8: FMG signal
+    # row index 9-16: sEMG signal
+    feature_name_list = ['subject_name', 'height(cm)', 'weight(kg)', 'gender', 'age', 'label(kg)', 
+                    'FMG', 'mav', 'rms', 'wave_length', 'zero_crossing', 'slope_sign_change', 'mean_freq', 'mean_power_freq']
+
+    # 用于存储n个df，每个df对用一通道信号特征
+    result_df_list = []
+    for key, value in channel_name_dic.items():
+        # 读取数据array
+        data_time = raw_data[0].values
+        raw_FMG = raw_data[value].values
+        raw_sEMG = raw_data[value + 8].values
+        # 创建对象，划分活动段
+        FMG = LabeledFMGFeature(raw_FMG, data_time, label, signal_sample_freq)
+        FMG.signal_segment_label(abandon_ms)
+        sEMG = LabeledsEMGFeature(raw_sEMG, data_time, label, signal_sample_freq)
+        sEMG.signal_segment_label(abandon_ms)
+        # 计算信号特征
+        temp_FMG_fea = FMG.get_avtive_state_FMG()[0]
+        temp_mav = sEMG.feature_mav(abs = True)[0]
+        temp_rms = sEMG.feature_rms(abs = True)[0]
+        temp_wl = sEMG.feature_wl(abs = True)[0]
+        temp_zc = sEMG.feature_zc(abs = True)[0]
+        temp_ssc = sEMG.feature_ssc(abs = True)[0]
+        temp_mf, temp_mpf = sEMG.freq_features()
+        temp_len = len(temp_FMG_fea)
+
+        subject_name_list = [subject_name for i in range(temp_len)]
+        subject_height_list = [subject_height for i in range(temp_len)]
+        subject_weight_list = [subject_weight for i in range(temp_len)]
+        subject_gender_list = [subject_gender for i in range(temp_len)]
+        subject_age_list = [subject_age for i in range(temp_len)]
+        label_list = [strength_level for i in range(temp_len)]
+
+        temp_fea_df = pd.DataFrame({'subject_name': subject_name_list,
+                                    'height(cm)': subject_height_list,
+                                    'weight(kg)': subject_weight_list,
+                                    'gender': subject_gender_list,
+                                    'age': subject_age_list,
+                                    'label(kg)': label_list,
+                                    'FMG': temp_FMG_fea,
+                                    'mav': temp_mav,
+                                    'rms': temp_rms,
+                                    'wave_length': temp_wl,
+                                    'zero_crossing': temp_zc,
+                                    'slope_sign_change': temp_ssc,
+                                    'mean_freq': temp_mf,
+                                    'mean_power_freq': temp_mpf})
+        temp_fea_df.columns = [[key for i in feature_name_list], feature_name_list]
+        result_df_list.append(temp_fea_df)
+        pass
+
+    all_feature_df = pd.concat(result_df_list, axis = 0, ignore_index = True)
     return all_feature_df
 
 
@@ -213,43 +299,6 @@ def FMG_overview_df(db_file_path: str,
                               "rst_ave": rst_ave_list,
                               "rst_std": rst_std_list})
     return result_df
-
-
-def sEMG_overview_df(db_file_path: str,
-                     time_file_path: str,
-                     signal_channel: int,
-                     abandon_ms: int = 300,
-                     signal_sample_freq: int = 1223) -> pd.DataFrame:
-    """
-    将FMG_overview的输出转换为dataframe,描述一段FMG信号的特征，例如平均值，基础值等
-    
-    return
-    ------
-    * result_df
-    """
-    result_dict = FMG_overview(db_file_path, time_file_path, signal_channel, abandon_ms, signal_sample_freq)
-    ave = result_dict["ave"]
-    std = result_dict["std"]
-    initial_pressure_min = result_dict["initial_pressure_min"]
-    initial_pressure_ave = result_dict["initial_pressure_ave"]
-    act_ave_list = result_dict["act_ave"]
-    act_std_list = result_dict["act_std"]
-    rst_ave_list = result_dict["rst_ave"]
-    rst_std_list = result_dict["rst_std"]
-    # 获得df长度
-    data_len = len(act_ave_list)
-
-    # 获得特征值df
-    result_df = pd.DataFrame({"ave": [ave for i in range(data_len)],
-                              "std": [std for i in range(data_len)],
-                              "initial_pressure_min": [initial_pressure_min for i in range(data_len)],
-                              "initial_pressure_ave": [initial_pressure_ave for i in range(data_len)],
-                              "act_ave": act_ave_list,
-                              "act_std": act_std_list,
-                              "rst_ave": rst_ave_list,
-                              "rst_std": rst_std_list})
-    return result_df
-
 
 
 def form_sbj_info_df(df_len: int, **subject_info) -> pd.DataFrame:
