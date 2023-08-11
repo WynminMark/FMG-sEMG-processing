@@ -471,13 +471,13 @@ class LabeledsEMGFeature(LabeledSignalFeature):
         self.raw_signal = band_pass_filter(signal_array, self.fs, 10, 500)
         pass
     
-    def feature_mav(self, abs = False):
+    def feature_mav(self, abs_value = False):
         """
         计算mean absolute value of sEMG
 
-        `abs`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
+        `abs_value`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
         """
-        if abs:
+        if abs_value:
             result_act = []
             result_rst = []
             for i in range(self.signal_segment_num):
@@ -497,13 +497,13 @@ class LabeledsEMGFeature(LabeledSignalFeature):
             return result_list
         
 
-    def feature_rms(self, abs = False):
+    def feature_rms(self, abs_value = False):
         """
         计算root mean square value
 
-        `abs`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
+        `abs_value`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
         """
-        if abs:
+        if abs_value:
             result_act = []
             result_rst = []
             for i in range(self.signal_segment_num):
@@ -522,15 +522,15 @@ class LabeledsEMGFeature(LabeledSignalFeature):
                     print("sEMG rest rms value is 0!")
             return result_list
 
-    def feature_wl(self, abs = False):
+    def feature_wl(self, abs_value = False):
         """
         计算wave length
         
-        `abs`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
+        `abs_value`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
         """
         # 对每列数据求差分，取绝对值，求和，平均
         # 实质是计算一列信号变化的剧烈程度，变化、跳动越剧烈，数值越大，信号越平缓，数值越小
-        if abs:
+        if abs_value:
             result_act = []
             result_rst = []
             for i in range(self.signal_segment_num):
@@ -549,13 +549,13 @@ class LabeledsEMGFeature(LabeledSignalFeature):
                     print("sEMG rest wave length is 0!")
             return result_list
 
-    def feature_zc(self, threshold = 10e-7, abs = False):
+    def feature_zc(self, threshold = 10e-7, abs_value = False):
         """
         计算zero-crossing rate
         
-        `abs`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
+        `abs_value`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
         """
-        if abs:
+        if abs_value:
             result_act = []
             result_rst = []
             for i in range(self.signal_segment_num):
@@ -577,13 +577,13 @@ class LabeledsEMGFeature(LabeledSignalFeature):
                 pass
             return result_list
 
-    def feature_ssc(self, threshold = 10e-7, abs = False):
+    def feature_ssc(self, threshold = 10e-7, abs_value = False):
         """
         计算slope sign changes rate
         
-        `abs`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
+        `abs_value`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
         """
-        if abs:
+        if abs_value:
             result_act = []
             result_rst = []
             for i in range(self.signal_segment_num):

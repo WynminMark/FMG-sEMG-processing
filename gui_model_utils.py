@@ -177,11 +177,11 @@ def form_feature_df(db_file_path: str,
         sEMG.signal_segment_label(abandon_ms)
         # 计算信号特征
         temp_FMG_fea = FMG.get_avtive_state_FMG()[0]
-        temp_mav = sEMG.feature_mav(abs = True)[0]
-        temp_rms = sEMG.feature_rms(abs = True)[0]
-        temp_wl = sEMG.feature_wl(abs = True)[0]
-        temp_zc = sEMG.feature_zc(abs = True)[0]
-        temp_ssc = sEMG.feature_ssc(abs = True)[0]
+        temp_mav = sEMG.feature_mav(abs_value = True)[0]
+        temp_rms = sEMG.feature_rms(abs_value = True)[0]
+        temp_wl = sEMG.feature_wl(abs_value = True)[0]
+        temp_zc = sEMG.feature_zc(abs_value = True)[0]
+        temp_ssc = sEMG.feature_ssc(abs_value = True)[0]
         temp_mf, temp_mpf = sEMG.freq_features()
         temp_len = len(temp_FMG_fea)
 
@@ -210,7 +210,7 @@ def form_feature_df(db_file_path: str,
         result_df_list.append(temp_fea_df)
         pass
 
-    all_feature_df = pd.concat(result_df_list, axis = 0, ignore_index = True)
+    all_feature_df = pd.concat(result_df_list, axis = 1)
     return all_feature_df
 
 
@@ -321,15 +321,18 @@ def form_sbj_info_df(df_len: int, **subject_info) -> pd.DataFrame:
 
 if __name__ == '__main__':
     subject_arg_input = {"subject_height": 182,
-                    "subject_weight": 82,
-                    "subject_age": 21,
-                    "subject_gender": 1,
-                    "subject_name": "Li Peiyang"}
+                        "subject_weight": 82,
+                        "subject_age": 21,
+                        "subject_gender": 1,
+                        "subject_name": "Li Peiyang"}
+    
+    signal_channel_dic = {"bicps_br": 1,
+                      "tricps_br_medial": 4,
+                      "tricps_br_lateral": 3}
     
     form_feature_df(db_file_path=r"E:\Data\20230424-单人双次iFEMG肌力等级测试\lpy-1\tri-0.db",
                     time_file_path=r"E:\Data\20230424-单人双次iFEMG肌力等级测试\lpy-1\tri-0.txt",
-                    signal_channel=1,
-                    channel_name="bicps_br",
+                    channel_name_dic=signal_channel_dic,
                     abandon_ms=1000,
                     strength_level=1,
                     **subject_arg_input)
