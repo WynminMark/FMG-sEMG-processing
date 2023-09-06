@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import joblib
+import os
 # private file
 from iFEMG_feature import *
 
@@ -319,6 +320,17 @@ def form_sbj_info_df(df_len: int, **subject_info) -> pd.DataFrame:
     sbj_info_df = pd.DataFrame(sbj_info_dict)
     return sbj_info_df
 
+
+def see_file(folder_path):
+    """
+    获取文件夹路径中的所有文件名
+    """
+    file_name_list = []
+    for file in os.listdir(folder_path):
+        file_name_list.append(file.split('.')[0])
+        pass
+    return set(file_name_list)
+
 if __name__ == '__main__':
     subject_arg_input = {"subject_height": 182,
                         "subject_weight": 82,
@@ -336,3 +348,4 @@ if __name__ == '__main__':
                     abandon_ms=1000,
                     strength_level=1,
                     **subject_arg_input)
+    
