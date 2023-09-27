@@ -929,7 +929,7 @@ def df_norm(dataframe: pd.DataFrame, col_name: list = [], method: Literal["z_sco
     Args:
     ------
         * `dataframe`:
-        * `col_name`:
+        * `col_name`: 需要进行归一化的列名
         * `method`: 可选`z_score`, `min-max`
     """
     all_col_name = list(dataframe)  # 获取所有列名
@@ -950,6 +950,34 @@ def df_norm(dataframe: pd.DataFrame, col_name: list = [], method: Literal["z_sco
         print("ERR! Normalization method dont exist!")
         return
     
+    # 对不需归一化和归一化后的df进行合并
+    result_df = pd.concat([df_not2norm, df_normed], axis=1)
+    return result_df
+
+
+def df_norm_with_selfscaler(dataframe: pd.DataFrame, col_name: list = [], self_scaler = ...) -> pd.DataFrame:
+    """对dataframe的指定列进行归一化
+    
+    Args:
+    ------
+        * `dataframe`:
+        * `col_name`: 需要进行归一化的列名
+        * `scaler`: 自定义scaler
+
+    Outputs:
+    ------
+        * df
+    """
+    all_col_name = list(dataframe)  # 获取所有列名
+    col_name2drop = [i for i in all_col_name if i not in col_name]  # 列名取差集
+    # 暂存不需要进行归一化的数据
+    df_not2norm = dataframe[col_name2drop]
+    # 需要进行归一化的数据
+    df2norm = dataframe[col_name]
+
+    # 根据method进行归一化
+    df_normed = pd.DataFrame(self_scaler.transform(df2norm), index = dataframe.index, columns = col_name)
+
     # 对不需归一化和归一化后的df进行合并
     result_df = pd.concat([df_not2norm, df_normed], axis=1)
     return result_df
@@ -1052,15 +1080,32 @@ def db2mat(folder_path, file_name = []) -> None:
     将folder_path路径中xcd-8+8channel.db文件中的数据转存为.mat文件, 方便Matlab进行读取操作
     Args
     ------
-    * `folder_path`
+    * `folder_path`: 存放db数据的文件夹
     * `file_name` = ["bi-0", "bi-05", "bi-1", "bi-2"]|["tri-0", "tri-05", "tri-1"]
     """
     for name in file_name:
-        # 读取文件路径中的数据
-        raw_data = pd.read_table(folder_path + "\\" + name + ".db", sep = ';', header = None)
-        # 提取第1-16路数据，转换为float64类型
-        data = raw_data.iloc[:, 1:17].values.astype(np.float64)
+        # 获得保存mat路径
         mat_name = name.replace("-", "_")
-        sio.savemat(folder_path + "\\" + mat_name + ".mat", {mat_name: data})
+        mat_path = folder_path + "\\" + mat_name + ".mat"
+
+        # Use this function to search for any files which match your filename
+        files_present = glob.glob(mat_path)
+        # if no matching files, write to csv, if there are matching files, print statement
+        if not files_present:
+            # 读取文件路径中的数据
+            db_path = folder_path + "\\" + name + ".db"
+            try:
+                raw_data = pd.read_table(db_path, sep = ';', header = None)
+            except FileNotFoundError:
+                print(f"{db_path} doesn't exist!")
+                continue
+            # 提取第1-16路数据，转换为float64类型
+            data = raw_data.iloc[:, 1:17].values.astype(np.float64)
+
+            sio.savemat(mat_path, {mat_name: data})
+            print(f"File {mat_path} saved!")
+        else:
+            print(f"WARNING: File {mat_path} NOT saved (same file already exists!)")
+            pass
         pass
     return

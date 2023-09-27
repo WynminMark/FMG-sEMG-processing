@@ -147,7 +147,9 @@ def form_feature_df(db_file_path: str,
     Args:
     ------
     * `channel_name_dict`: {"muscle_name": channel_num}
+    
     Output:
+    ------
         unnormalized feature dataframe
     """
     # read data
