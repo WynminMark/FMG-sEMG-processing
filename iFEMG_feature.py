@@ -717,9 +717,9 @@ def band_trap_filter(data: np.array, fs: int, f0: int):
     filtered_data = signal.filtfilt(b, a, data)
     return filtered_data
 
-
+"""
 def band_pass_filter(data: np.array, fs: int, fstop1: int, fstop2: int, order: int = 8):
-    """
+    '''
     基于filtfilt和butter实现的零相位带通滤波器
 
     Args:
@@ -728,10 +728,34 @@ def band_pass_filter(data: np.array, fs: int, fstop1: int, fstop2: int, order: i
     * `fs`: sample frequency.
     * `fsopt1`/`fstop2`: low/high cut-off frequency
     * `order`: 巴特沃斯滤波器阶数
-    """
+    '''
     b, a = signal.butter(order, [2*fstop1/fs, 2*fstop2/fs], 'bandpass')
     filted_data = signal.filtfilt(b, a, data)
     return filted_data
+"""
+
+class BandPassFilter():
+    def __init__(self, fs: int, fstop1: int, fstop2: int, order: int = 8):
+        '''
+        Args:
+        ------
+        * `fs`: sample frequency.
+        * `fsopt1`/`fstop2`: low/high cut-off frequency
+        * `order`: 巴特沃斯滤波器阶数
+        '''
+        self.b, self.a = signal.butter(order, [2*fstop1/fs, 2*fstop2/fs], btype = 'band')
+        pass
+    def filt(self, data: np.array):
+        '''
+        Args:
+        ------
+        * `data`: array like signal.
+        '''
+        filted_data = signal.filtfilt(self.b, self.a, data)
+        return filted_data
+
+    # end class
+    pass
 
 
 def freq_spec(y, fs):
@@ -1077,7 +1101,8 @@ def box_outlier_filter(data, thrs = 1.5):
 
 def db2mat(folder_path, file_name = []) -> None:
     """
-    将folder_path路径中xcd-8+8channel.db文件中的数据转存为.mat文件, 方便Matlab进行读取操作
+    将folder_path路径中xcd-8+8channel.db文件中的数据转存为.mat文件并保存在原路径中, 方便Matlab进行读取操作；
+    可以自动忽略已转换和不存在的文件；
     Args
     ------
     * `folder_path`: 存放db数据的文件夹
