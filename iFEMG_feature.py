@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 from scipy import signal
+from scipy import fft
 import numpy as np
 import time
 import datetime
@@ -474,6 +475,7 @@ class LabeledsEMGFeature(LabeledSignalFeature):
     def feature_mav(self, abs_value = False):
         """
         计算mean absolute value of sEMG
+        时域幅度特征
 
         `abs_value`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
         """
@@ -500,6 +502,7 @@ class LabeledsEMGFeature(LabeledSignalFeature):
     def feature_rms(self, abs_value = False):
         """
         计算root mean square value
+        时域幅度特征
 
         `abs_value`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
         """
@@ -525,6 +528,7 @@ class LabeledsEMGFeature(LabeledSignalFeature):
     def feature_wl(self, abs_value = False):
         """
         计算wave length
+        时域幅度相关特征
         
         `abs_value`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
         """
@@ -604,11 +608,12 @@ class LabeledsEMGFeature(LabeledSignalFeature):
             return result_list
 
     def freq_features(self):
-        """
+        '''
+        计算活动段的中值频率和平均功率频率
         feature name:
             1.mean frequency
             2.mean power frequency
-        """
+        '''
         mf_list = []
         mpf_list = []
         for index in range(self.signal_segment_num):
@@ -717,8 +722,8 @@ def band_trap_filter(data: np.array, fs: int, f0: int):
     filtered_data = signal.filtfilt(b, a, data)
     return filtered_data
 
-"""
-def band_pass_filter(data: np.array, fs: int, fstop1: int, fstop2: int, order: int = 8):
+
+def band_pass_filter(data: np.array, fs: int, fstop1: int, fstop2: int, order: int = 4):
     '''
     基于filtfilt和butter实现的零相位带通滤波器
 
@@ -732,10 +737,46 @@ def band_pass_filter(data: np.array, fs: int, fstop1: int, fstop2: int, order: i
     b, a = signal.butter(order, [2*fstop1/fs, 2*fstop2/fs], 'bandpass')
     filted_data = signal.filtfilt(b, a, data)
     return filted_data
-"""
+
+
+class NotchFilter():
+    def __init__(self, f0: int = 50, fs: int = 1222, Q: int = 10):
+        '''
+        Args:
+        ------
+        * `f0`: center frequency
+        * `fs`: sample frequency.
+        * `Q`: quality factor
+        '''
+        self.fs = fs
+        self.b, self.a = signal.iirnotch(f0, Q, fs)
+        pass
+
+    def show_character(self):
+        w, h = signal.freqz(self.b, self.a, worN=8000)
+        plt.figure()
+        plt.plot(0.5 * self.fs * w/np.pi, 20 * np.log10(abs(h)), 'b')
+        plt.title("Notch filter frequency response")
+        plt.xlabel('Frequency (Hz)')
+        plt.ylabel('Gain (dB)')
+        plt.show()
+        pass
+
+    def filt(self, data: np.array):
+        '''
+        Args:
+        ------
+        * `data`: array like signal.
+        '''
+        filted_data = signal.sosfiltfilt(signal.tf2sos(self.b, self.a), data)
+        return filted_data
+        
+
+    # end class
+    pass
 
 class BandPassFilter():
-    def __init__(self, fs: int, fstop1: int, fstop2: int, order: int = 8):
+    def __init__(self, fs: int, fstop1: int, fstop2: int, order: int = 4):
         '''
         Args:
         ------
@@ -743,8 +784,54 @@ class BandPassFilter():
         * `fsopt1`/`fstop2`: low/high cut-off frequency
         * `order`: 巴特沃斯滤波器阶数
         '''
-        self.b, self.a = signal.butter(order, [2*fstop1/fs, 2*fstop2/fs], btype = 'band')
+        self.fs = fs
+        self.b, self.a = signal.butter(order, [2*fstop1/fs, 2*fstop2/fs], btype = 'bandpass')
         pass
+
+    def show_character(self):
+        # 计算频率响应
+        w, h = signal.freqz(self.b, self.a)
+
+        z, p, k = signal.tf2zpk(self.b, self.a)
+        # 判断极点的实部是否都小于零
+        if np.all(np.real(p) < 0):
+            print("stable")
+        else:
+            print("unstable")
+
+        # 绘制振幅响应曲线
+        plt.figure()
+        plt.plot(w * self.fs / (2 * np.pi), np.abs(h))
+        plt.xlabel('Frequency')
+        plt.ylabel('Amplitude')
+        plt.title('Frequency Response')
+        plt.grid(True)
+
+        # 绘制相位响应曲线
+        plt.figure()
+        plt.plot(w * self.fs / (2 * np.pi), np.angle(h))
+        plt.xlabel('Frequency')
+        plt.ylabel('Phase')
+        plt.title('Phase Response')
+        plt.grid(True)
+
+        plt.show()
+
+        # 绘制极点的位置和单位圆
+        plt.scatter(np.real(p), np.imag(p), marker='x', color='r', label='Poles')  # 绘制极点
+        theta = np.linspace(0, 2*np.pi, 100)
+        plt.plot(np.cos(theta), np.sin(theta), linestyle='--', color='b', label='Unit Circle')  # 绘制单位圆
+        plt.axvline(x=0, color='k', linestyle='--')  # 实轴
+        plt.axhline(y=0, color='k', linestyle='--')  # 虚轴
+        plt.xlabel('Real')
+        plt.ylabel('Imaginary')
+        plt.title('Pole-Zero Plot with Unit Circle')
+        plt.axis('equal')  # 设置坐标轴比例相等
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+        pass
+
     def filt(self, data: np.array):
         '''
         Args:
@@ -774,28 +861,33 @@ def freq_spec(y, fs):
     return fft_x, fft_y
 
 
-def power_spec(y, fs):
+def show_power_spec(data: np.array, fs: int = 1222):
     '''
-    用自相关函数的傅里叶变换求信号的功率谱
-    结果比较像matlab中自带函数的计算结果
     '''
-    # 和python中自带psd函数的计算结果差异较大
-    N = len(y)
-    cor_y = np.correlate(y, y, 'same')
-    cor_y_fft = np.fft.fft(cor_y, N)
-    ps_cor = np.abs(cor_y_fft)
-    ps_cor = ps_cor/np.max(ps_cor)
-    
-    x_index = np.linspace(0.0, fs/2, N//2)
-    y_value = 10*np.log10(ps_cor[:N//2])
-
-    plt.figure()
-    plt.plot(x_index, ps_cor[:N//2])
-    plt.xlabel('freq(Hz)')
-    plt.title("self function power specture")
+    f, Pxx = signal.welch(data, fs, nperseg=len(data))
+    # 绘制功率谱密度图
+    # plt.semilogy(f, Pxx)
+    plt.plot(f, Pxx)
+    plt.xlabel('Frequency (Hz)')
+    plt.ylabel('Power Spectral Density')
+    plt.title('Power Spectral Density of the Signal')
     plt.show()
 
-    return x_index, y_value
+    return f, Pxx
+
+
+def show_freq_spec(signal: np.array, fs: int = 1222):
+    '''
+    '''
+    fft_result = fft.fft(signal)
+    frequencies = fft.fftfreq(len(signal), 1/fs)
+
+    plt.figure()
+    plt.plot(frequencies, np.abs(fft_result))
+    plt.xlabel('Frequency (Hz)')
+    plt.ylabel('Amplitude')
+    plt.show()
+    pass
 
 
 def FMG_analysis(FMG, rFMG, fs):
@@ -1134,3 +1226,8 @@ def db2mat(folder_path, file_name = []) -> None:
             pass
         pass
     return
+
+
+
+if __name__ == '__main__':
+    pass

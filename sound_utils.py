@@ -1,3 +1,7 @@
+"""
+声音播放
+"""
+
 import pyaudio
 import wave
 import sys

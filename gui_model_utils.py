@@ -179,12 +179,13 @@ def form_feature_df(db_file_path: str,
         sEMG = LabeledsEMGFeature(raw_sEMG, data_time, label, signal_sample_freq)
         sEMG.signal_segment_label(abandon_ms)
         # 计算信号特征
-        temp_FMG_fea = FMG.get_avtive_state_FMG()[0]
-        temp_mav = sEMG.feature_mav(abs_value = True)[0]
-        temp_rms = sEMG.feature_rms(abs_value = True)[0]
-        temp_wl = sEMG.feature_wl(abs_value = True)[0]
-        temp_zc = sEMG.feature_zc(abs_value = True)[0]
-        temp_ssc = sEMG.feature_ssc(abs_value = True)[0]
+        # temp_FMG_fea = FMG.get_avtive_state_FMG()[0]
+        temp_FMG_fea = FMG.average_increase()
+        temp_mav = sEMG.feature_mav(abs_value = False)
+        temp_rms = sEMG.feature_rms(abs_value = False)
+        temp_wl = sEMG.feature_wl(abs_value = False)
+        temp_zc = sEMG.feature_zc(abs_value = False)
+        temp_ssc = sEMG.feature_ssc(abs_value = False)
         temp_mf, temp_mpf = sEMG.freq_features()
         temp_len = len(temp_FMG_fea)
 
@@ -216,6 +217,94 @@ def form_feature_df(db_file_path: str,
     all_feature_df = pd.concat(result_df_list, axis = 1)
     return all_feature_df
 
+
+def form_feature_df_4chs(db_file_path: str,
+                        time_file_path: str,
+                        channel_name_dic: dict,
+                        subject_height,
+                        subject_weight,
+                        subject_age,
+                        subject_gender,
+                        abandon_ms = 1000,
+                        subject_name = "test",
+                        strength_level = np.NaN,
+                        signal_sample_freq = 1600):
+    """
+    计算一组.db & time.txt文件中所有通道iFEMG信号的特征值
+    1600采样率
+    4通道
+    
+    Args:
+    ------
+    * `channel_name_dict`: {"muscle_name": channel_num}
+    
+    Output:
+    ------
+        unnormalized feature dataframe
+    """
+    # read data
+    try:
+        raw_data = pd.read_table(db_file_path, sep = ';', header = None)
+        label = read_label(time_file_path)
+    except FileNotFoundError:
+        print(f"No such file: {db_file_path, time_file_path}")
+        return
+    # read db file
+    # row index 0: time
+    # row index 1-4: FMG signal
+    # row index 5-8: sEMG signal
+    feature_name_list = ['subject_name', 'height(cm)', 'weight(kg)', 'gender', 'age', 'label(kg)', 
+                    'FMG', 'mav', 'rms', 'wave_length', 'zero_crossing', 'slope_sign_change', 'mean_freq', 'mean_power_freq']
+
+    # 用于存储n个df，每个df对用一通道信号特征
+    result_df_list = []
+    for key, value in channel_name_dic.items():
+        # 读取数据array
+        data_time = raw_data[0].values
+        raw_FMG = raw_data[value].values
+        raw_sEMG = raw_data[value + 4].values
+        # 创建对象，划分活动段
+        FMG = LabeledFMGFeature(raw_FMG, data_time, label, signal_sample_freq)
+        FMG.signal_segment_label(abandon_ms)
+        sEMG = LabeledsEMGFeature(raw_sEMG, data_time, label, signal_sample_freq)
+        sEMG.signal_segment_label(abandon_ms)
+        # 计算信号特征
+        temp_FMG_fea = FMG.average_increase()
+        temp_mav = sEMG.feature_mav()
+        temp_rms = sEMG.feature_rms()
+        temp_wl = sEMG.feature_wl()
+        temp_zc = sEMG.feature_zc()
+        temp_ssc = sEMG.feature_ssc()
+        temp_mf, temp_mpf = sEMG.freq_features()
+        temp_len = len(temp_FMG_fea)
+
+        subject_name_list = [subject_name for i in range(temp_len)]
+        subject_height_list = [subject_height for i in range(temp_len)]
+        subject_weight_list = [subject_weight for i in range(temp_len)]
+        subject_gender_list = [subject_gender for i in range(temp_len)]
+        subject_age_list = [subject_age for i in range(temp_len)]
+        label_list = [strength_level for i in range(temp_len)]
+
+        temp_fea_df = pd.DataFrame({'subject_name': subject_name_list,
+                                    'height(cm)': subject_height_list,
+                                    'weight(kg)': subject_weight_list,
+                                    'gender': subject_gender_list,
+                                    'age': subject_age_list,
+                                    'label(kg)': label_list,
+                                    'FMG': temp_FMG_fea,
+                                    'mav': temp_mav,
+                                    'rms': temp_rms,
+                                    'wave_length': temp_wl,
+                                    'zero_crossing': temp_zc,
+                                    'slope_sign_change': temp_ssc,
+                                    'mean_freq': temp_mf,
+                                    'mean_power_freq': temp_mpf})
+        temp_fea_df.columns = [[key for i in feature_name_list], feature_name_list]
+        result_df_list.append(temp_fea_df)
+        pass
+
+    all_feature_df = pd.concat(result_df_list, axis = 1)
+    return all_feature_df
 
 def FMG_overview(db_file_path: str,
                 time_file_path: str,
