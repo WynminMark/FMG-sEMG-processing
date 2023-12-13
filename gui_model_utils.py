@@ -140,7 +140,7 @@ def form_feature_df(db_file_path: str,
                     abandon_ms = 300,
                     subject_name = "test",
                     strength_level = np.NaN,
-                    signal_sample_freq = 1223):
+                    signal_sample_freq = 1222):
     """
     计算一组.db & time.txt文件中所有通道iFEMG信号的特征值，肌肉名称与信号通道使用dict传入
     

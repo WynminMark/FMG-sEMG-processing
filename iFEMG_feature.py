@@ -467,9 +467,26 @@ class LabeledFMGFeature(LabeledSignalFeature):
 
 class LabeledsEMGFeature(LabeledSignalFeature):
     def __init__(self, signal_array, signal_time_array, label, sample_frequency):
+        '''
+        初始化滤波器并对sEMG信号进行滤波
+        Args:
+        ------
+        - `signal_array`
+        - `signal_time_array`
+        - `label`: list, output of read_label()
+        - `sample_frequency`
+        '''
         super().__init__(signal_array, signal_time_array, label, sample_frequency)
-        # 零相位滤波去除基线漂移
-        self.raw_signal = band_pass_filter(signal_array, self.fs, 10, 500)
+        # 零相位滤波去除信号噪声
+        filter1 = NotchFilter(f0=50, fs=self.fs, Q=10)
+        filter2 = NotchFilter(f0=150, fs=self.fs, Q=10)
+        filter3 = NotchFilter(f0=203.7, fs=self.fs, Q=10)
+        filter4 = NotchFilter(f0=250, fs=self.fs, Q=10)
+        filter5 = NotchFilter(f0=350, fs=self.fs, Q=10)
+        filter6 = NotchFilter(f0=407.4, fs=self.fs, Q=10)
+        filter7 = NotchFilter(f0=450, fs=self.fs, Q=10)
+        bandpassfilter = ButterFilter(fs = self.fs, fc = [10, 500], order = 8, ftype='bandpass')
+        self.raw_signal = bandpassfilter.filt(filter7.filt(filter6.filt(filter5.filt(filter4.filt(filter3.filt(filter2.filt(filter1.filt(signal_array))))))))
         pass
     
     def feature_mav(self, abs_value = False):
@@ -607,9 +624,14 @@ class LabeledsEMGFeature(LabeledSignalFeature):
                 pass
             return result_list
 
-    def freq_features(self):
+    def freq_features(self, method: str = 'welch'):
         '''
         计算活动段的中值频率和平均功率频率
+        Args:
+        ------
+        * `method`: {'welch', 'psd'}
+        Outputs:
+        ------
         feature name:
             1.mean frequency
             2.mean power frequency
@@ -618,10 +640,19 @@ class LabeledsEMGFeature(LabeledSignalFeature):
         mpf_list = []
         for index in range(self.signal_segment_num):
             # calculate psd specture
-            pxx, f = plt.psd(self.active_signal_segment[index], NFFT = 256, Fs = self.fs, Fc = 0, detrend = mlab.detrend_none,
+            if method == 'welch':
+                f, pxx = signal.welch(self.active_signal_segment[index],
+                                      self.fs,
+                                      nperseg=len(self.active_signal_segment[index])/8,
+                                      noverlap=len(self.active_signal_segment[index])/16)
+            elif method == 'psd':
+                pxx, f = plt.psd(self.active_signal_segment[index], NFFT = 256, Fs = self.fs, Fc = 0, detrend = mlab.detrend_none,
                             window = mlab.window_hanning, noverlap = 0, pad_to = None, 
                             sides = 'default', scale_by_freq = None, return_line = None)
-            plt.close()
+                plt.close()
+            else:
+                print(f"Did not calculate mf and mpf")
+                return
             '''
             scipy.signal.welch(x, fs=1.0, window='hann', nperseg=None, noverlap=None, nfft=None, detrend='constant', return_onesided=True, scaling='density', axis=- 1, average='mean')
             '''
@@ -742,6 +773,7 @@ def band_pass_filter(data: np.array, fs: int, fstop1: int, fstop2: int, order: i
 class NotchFilter():
     def __init__(self, f0: int = 50, fs: int = 1222, Q: int = 10):
         '''
+        iirnotch filter
         Args:
         ------
         * `f0`: center frequency
@@ -753,6 +785,9 @@ class NotchFilter():
         pass
 
     def show_character(self):
+        '''
+        显示频率响应曲线
+        '''
         w, h = signal.freqz(self.b, self.a, worN=8000)
         plt.figure()
         plt.plot(0.5 * self.fs * w/np.pi, 20 * np.log10(abs(h)), 'b')
@@ -764,20 +799,21 @@ class NotchFilter():
 
     def filt(self, data: np.array):
         '''
+        基于sosfiltfilt的零相位滤波
         Args:
         ------
         * `data`: array like signal.
         '''
         filted_data = signal.sosfiltfilt(signal.tf2sos(self.b, self.a), data)
         return filted_data
-        
-
+    
     # end class
     pass
 
 class BandPassFilter():
     def __init__(self, fs: int, fstop1: int, fstop2: int, order: int = 4):
         '''
+        巴特沃斯带通滤波器
         Args:
         ------
         * `fs`: sample frequency.
@@ -789,6 +825,9 @@ class BandPassFilter():
         pass
 
     def show_character(self):
+        '''
+        显示滤波器频率响应、相位响应、极点位置
+        '''
         # 计算频率响应
         w, h = signal.freqz(self.b, self.a)
 
@@ -834,6 +873,80 @@ class BandPassFilter():
 
     def filt(self, data: np.array):
         '''
+        基于filtfilt零相位滤波
+        Args:
+        ------
+        * `data`: array like signal.
+        '''
+        filted_data = signal.filtfilt(self.b, self.a, data)
+        return filted_data
+
+    # end class
+    pass
+
+
+class ButterFilter():
+    def __init__(self, fs: int = 1200, fc: list|int = ..., order: int = 4, ftype: str = 'lowpass'):
+        '''
+        Args:
+        ------
+        * `fc`: critical freq (-3dB point. details in butter). Wn = 2*fc/fs
+        * `type`: {'lowpass', 'highpass', 'bandpass', 'bandstop'}
+        '''
+        self.fs = fs
+        self.b, self.a = signal.butter(N = order, Wn = fc, btype = ftype, fs = fs)
+        pass
+
+    def show_character(self):
+        '''
+        显示滤波器频率响应、相位响应、极点位置
+        '''
+        # 计算频率响应
+        w, h = signal.freqz(self.b, self.a)
+
+        z, p, k = signal.tf2zpk(self.b, self.a)
+        # 判断极点的实部是否都小于零
+        if np.all(np.real(p) < 0):
+            print("stable")
+        else:
+            print("unstable")
+
+        # 绘制振幅响应曲线
+        plt.figure()
+        plt.plot(w * self.fs / (2 * np.pi), np.abs(h))
+        plt.xlabel('Frequency')
+        plt.ylabel('Amplitude')
+        plt.title('Frequency Response')
+        plt.grid(True)
+
+        # 绘制相位响应曲线
+        plt.figure()
+        plt.plot(w * self.fs / (2 * np.pi), np.angle(h))
+        plt.xlabel('Frequency')
+        plt.ylabel('Phase')
+        plt.title('Phase Response')
+        plt.grid(True)
+
+        plt.show()
+
+        # 绘制极点的位置和单位圆
+        plt.scatter(np.real(p), np.imag(p), marker='x', color='r', label='Poles')  # 绘制极点
+        theta = np.linspace(0, 2*np.pi, 100)
+        plt.plot(np.cos(theta), np.sin(theta), linestyle='--', color='b', label='Unit Circle')  # 绘制单位圆
+        plt.axvline(x=0, color='k', linestyle='--')  # 实轴
+        plt.axhline(y=0, color='k', linestyle='--')  # 虚轴
+        plt.xlabel('Real')
+        plt.ylabel('Imaginary')
+        plt.title('Pole-Zero Plot with Unit Circle')
+        plt.axis('equal')  # 设置坐标轴比例相等
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+        pass
+
+    def filt(self, data: np.array):
+        '''
+        基于filtfilt零相位滤波
         Args:
         ------
         * `data`: array like signal.
@@ -863,8 +976,10 @@ def freq_spec(y, fs):
 
 def show_power_spec(data: np.array, fs: int = 1222):
     '''
+    基于welch方法
+    nperseg = len(data)/8, noverlap = len(data)/16
     '''
-    f, Pxx = signal.welch(data, fs, nperseg=len(data))
+    f, Pxx = signal.welch(data, fs, nperseg=len(data)/8, noverlap=len(data)/16)
     # 绘制功率谱密度图
     # plt.semilogy(f, Pxx)
     plt.plot(f, Pxx)
