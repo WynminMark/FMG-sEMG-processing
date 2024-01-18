@@ -228,7 +228,7 @@ def form_feature_df_4chs(db_file_path: str,
                         abandon_ms = 1000,
                         subject_name = "test",
                         strength_level = np.NaN,
-                        signal_sample_freq = 1600):
+                        signal_sample_freq = 1626):
     """
     计算一组.db & time.txt文件中所有通道iFEMG信号的特征值
     1600采样率
