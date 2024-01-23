@@ -12,7 +12,7 @@ import scipy.io as sio
 from sklearn import preprocessing
 from typing import Literal
 
-from feature_utils import *
+from utils_feature import *
 
 
 # 一般数据的处理

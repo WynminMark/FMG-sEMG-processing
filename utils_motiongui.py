@@ -12,7 +12,7 @@ import datetime
 from tkinter.font import Font
 from tkinter import ttk
 # private file
-from gui_model_utils import *
+from utils_gui_model import *
 
 # original version motion guide app
 class MotionGuideGUI():

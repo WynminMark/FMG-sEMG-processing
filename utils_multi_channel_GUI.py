@@ -9,9 +9,9 @@ import time
 import datetime
 from tkinter.font import NORMAL, Font
 from tkinter import DISABLED, ttk
-import sound_utils
+import utils_sound
 # private 
-from gui_model_utils import *
+from utils_gui_model import *
 
 # original version motion guide app
 class MotionGuideGUI():
