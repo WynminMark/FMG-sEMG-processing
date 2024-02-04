@@ -362,13 +362,20 @@ def FMG_overview_df(db_file_path: str,
                     signal_channel: int,
                     abandon_ms: int = 300,
                     signal_sample_freq: int = 1223) -> pd.DataFrame:
-    """
-    将FMG_overview的输出转换为dataframe,描述一段FMG信号的特征，例如平均值，基础值等
+    '''
+    将FMG_overview的输出转换为dataframe, 描述一段FMG信号的特征, 例如平均值, 基础值等
     
-    return
+    * Return:
     ------
-    * result_df
-    """
+    * df {`ave`: signal_ave_value, 整段信号的平均值
+        `std`: signal_std_value, 整段信号标准差
+        `initial_pressure_min`: initial_pressure_min, 第一个放松阶段的FMG最小值
+        `initial_pressure_ave`: initial_pressure_ave, 第一个放松阶段的FMG平均值
+        `act_ave`: act_ave_list, 每个活动段的平均值
+        `act_std`: act_std_list, 每个活动段的标准差
+        `rst_ave`: rst_ave_list, 每个放松段的平均值
+        `rst_std`:rst_std_list, 每个放松段的标准差}
+    '''
     result_dict = FMG_overview(db_file_path, time_file_path, signal_channel, abandon_ms, signal_sample_freq)
     ave = result_dict["ave"]
     std = result_dict["std"]
