@@ -1262,16 +1262,33 @@ def z_score_norm(dataframe, col_name = []):
 def df_save_csv(dataframe, filename):
     '''把dataframe存到文件路径filename处
     
-    覆写检测，避免损失之前的数据'''
+    覆写检测，避免损失之前的数据
+    不保存index'''
     # Use this function to search for any files which match your filename
     files_present = glob.glob(filename)
     # if no matching files, write to csv, if there are matching files, print statement
     if not files_present:
-        dataframe.to_csv(filename)
+        dataframe.to_csv(filename, index = False)
         print(f"File {filename} saved!")
     else:
         print(f"WARNING: File {filename} NOT saved (same file already exists!)")
     pass
+
+
+def df_merge_colname(df: pd.DataFrame) -> pd.DataFrame:
+    '''
+    把df多重列名字符串拼接合并成单列名
+    '''
+    df_copy = df.copy() # 复制dataframe防止修改原df，导致多次运行结果不一致
+    old_col_name_list = list(df_copy)
+    new_col_name_list = []
+    for name in old_col_name_list:
+        new_col_name_list.append("_".join(name))
+        pass
+
+    df_copy.columns = new_col_name_list
+    
+    return df_copy
 
 
 def statistical_outlier_filter(data, thrs = 3):
