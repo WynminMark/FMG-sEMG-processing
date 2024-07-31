@@ -550,7 +550,7 @@ class LabeledsEMGFeature(LabeledSignalFeature):
         `abs_value`: `True`返回活动态和静息态的绝对值，`False`返回活动态与静息态的相对增加量
         """
         # 对每列数据求差分，取绝对值，求和，平均
-        # 实质是计算一列信号变化的剧烈程度，变化、跳动越剧烈，数值越大，信号越平缓，数值越小
+        # 实质是计算一列信号变化的剧烈程度，变化、跳动越剧烈，数值越大；信号越平缓，数值越小
         if abs_value:
             result_act = []
             result_rst = []
