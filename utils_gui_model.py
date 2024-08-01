@@ -130,6 +130,8 @@ def form_feature_df(db_file_path,
                                    'mean_power_freq': temp_mpf})
     return all_feature_df
 '''
+
+"""
 def form_feature_df(db_file_path: str,
                     time_file_path: str,
                     channel_name_dic: dict,
@@ -141,7 +143,7 @@ def form_feature_df(db_file_path: str,
                     subject_name = "test",
                     strength_level = np.NaN,
                     signal_sample_freq = 1222):
-    """
+    '''
     计算一组.db & time.txt文件中所有通道iFEMG信号的特征值，肌肉名称与信号通道使用dict传入
     
     Args:
@@ -151,7 +153,7 @@ def form_feature_df(db_file_path: str,
     Output:
     ------
         unnormalized feature dataframe
-    """
+    '''
     # read data
     try:
         raw_data = pd.read_table(db_file_path, sep = ';', header = None)
@@ -216,8 +218,9 @@ def form_feature_df(db_file_path: str,
 
     all_feature_df = pd.concat(result_df_list, axis = 1)
     return all_feature_df
+"""
 
-
+"""
 def form_feature_df_4chs(db_file_path: str,
                         time_file_path: str,
                         channel_name_dic: dict,
@@ -229,7 +232,7 @@ def form_feature_df_4chs(db_file_path: str,
                         subject_name = "test",
                         strength_level = np.NaN,
                         signal_sample_freq = 1626):
-    """
+    '''
     计算一组.db & time.txt文件中所有通道iFEMG信号的特征值
     1600采样率
     4通道
@@ -241,7 +244,7 @@ def form_feature_df_4chs(db_file_path: str,
     Output:
     ------
         unnormalized feature dataframe
-    """
+    '''
     # read data
     try:
         raw_data = pd.read_table(db_file_path, sep = ';', header = None)
@@ -305,13 +308,14 @@ def form_feature_df_4chs(db_file_path: str,
 
     all_feature_df = pd.concat(result_df_list, axis = 1)
     return all_feature_df
+"""
 
 def FMG_overview(db_file_path: str,
                 time_file_path: str,
                 signal_channel: int,
                 abandon_ms: int = 300,
                 signal_sample_freq: int = 1223) -> dict:
-    """
+    '''
     用于描述一段FMG信号的特征，例如平均值，基础值等
     
     * Return:
@@ -324,7 +328,7 @@ def FMG_overview(db_file_path: str,
             `act_std`: act_std_list,
             `rst_ave`: rst_ave_list,
             `rst_std`:rst_std_list}
-    """
+    '''
     # 读取原始数据
     try:
         raw_data = pd.read_table(db_file_path, sep = ';', header = None)
@@ -400,6 +404,72 @@ def FMG_overview_df(db_file_path: str,
     return result_df
 
 
+def form_feature_df_1ch(db_file_path: str,
+                        time_file_path: str,
+                        signal_channel: int,
+                        abandon_ms: int = 1000,
+                        signal_sample_freq: int = 1626,
+                        ch_nums: int = 4):
+    """
+    计算一通道传感器的特征值(绝对值)
+    
+    Args:
+    * `signal_sample_freq`: 1626 or 1222
+    * `ch_nums`: 4 channels or 8 channels
+    ------
+    Output:
+    ------
+        unnormalized feature dataframe
+        `feature_name_list` = ['initial_pressure_ave', 'act_ave_list', 'mav', 'rms', 'wave_length', 'zero_crossing', 'slope_sign_change', 'mean_freq', 'mean_power_freq']
+    """
+    # read data
+    try:
+        raw_data = pd.read_table(db_file_path, sep = ';', header = None)
+        label = read_label(time_file_path)
+    except FileNotFoundError:
+        print(f"No such file: {db_file_path, time_file_path}")
+        return
+    # read db file
+    # row index 0: time
+    # row index 1-4: FMG signal
+    # row index 5-8: sEMG signal
+    # feature_name_list = ['initial_pressure_ave', 'act_ave_list', 'mav', 'rms', 'wave_length', 'zero_crossing', 'slope_sign_change', 'mean_freq', 'mean_power_freq']
+
+    # 读取原始数据数据array
+    data_time = raw_data[0].values
+    raw_FMG = raw_data[signal_channel].values
+    raw_sEMG = raw_data[signal_channel + ch_nums].values
+    # 创建对象，划分活动段
+    FMG = LabeledFMGFeature(raw_FMG, data_time, label, signal_sample_freq)
+    FMG.signal_segment_label(abandon_ms)
+    sEMG = LabeledsEMGFeature(raw_sEMG, data_time, label, signal_sample_freq)
+    sEMG.signal_segment_label(abandon_ms)
+    # 计算信号特征
+    temp_iniprss = FMG.get_initial_pressure()[1]
+    temp_FMG_fea = FMG.get_avtive_state_FMG()[0]
+    temp_mav = sEMG.feature_mav(abs_value=True)[0]
+    temp_rms = sEMG.feature_rms(abs_value=True)[0]
+    temp_wl = sEMG.feature_wl(abs_value=True)[0]
+    temp_zc = sEMG.feature_zc(abs_value=True)[0]
+    temp_ssc = sEMG.feature_ssc(abs_value=True)[0]
+    temp_mf, temp_mpf = sEMG.freq_features()
+    temp_len = len(temp_FMG_fea)
+
+    # initial pressure参数复制扩展成与其他参数同等长度的列表
+    temp_iniprss_list = [temp_iniprss for i in range(temp_len)]
+
+    result_df = pd.DataFrame({'initial_pressure_ave': temp_iniprss_list,
+                                'FMG': temp_FMG_fea,
+                                'mav': temp_mav,
+                                'rms': temp_rms,
+                                'wave_length': temp_wl,
+                                'zero_crossing': temp_zc,
+                                'slope_sign_change': temp_ssc,
+                                'mean_freq': temp_mf,
+                                'mean_power_freq': temp_mpf})
+    return result_df
+
+
 def form_sbj_info_df(df_len: int, **subject_info) -> pd.DataFrame:
     """
     把受试者的信息扩展成与特征df相同长度的df
@@ -429,6 +499,7 @@ def see_file(folder_path):
         pass
     return set(file_name_list)
 
+
 if __name__ == '__main__':
     subject_arg_input = {"subject_height": 182,
                         "subject_weight": 82,
@@ -447,3 +518,4 @@ if __name__ == '__main__':
                     strength_level=1,
                     **subject_arg_input)
     
+
