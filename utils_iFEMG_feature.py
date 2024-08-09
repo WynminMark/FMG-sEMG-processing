@@ -1155,14 +1155,14 @@ def form_feature_df(db_path, label_path, subject, strength_level):
 '''
 
 def df_norm(dataframe: pd.DataFrame, col_name: list = [], method: Literal["z_score", "min-max"] = ...) -> pd.DataFrame:
-    """对dataframe的指定列进行归一化
+    '''对dataframe的指定列进行归一化
     
     Args:
     ------
         * `dataframe`:
         * `col_name`: 需要进行归一化的列名
         * `method`: 可选`z_score`, `min-max`
-    """
+    '''
     all_col_name = list(dataframe)  # 获取所有列名
     col_name2drop = [i for i in all_col_name if i not in col_name]  # 列名取差集
     # 暂存不需要进行归一化的数据
@@ -1176,6 +1176,48 @@ def df_norm(dataframe: pd.DataFrame, col_name: list = [], method: Literal["z_sco
         df_normed = pd.DataFrame(scaler, index = dataframe.index, columns = col_name)
     elif method == "min-max":
         scaler = preprocessing.MinMaxScaler().fit_transform(df2norm)
+        df_normed = pd.DataFrame(scaler, index = dataframe.index, columns = col_name)
+    else:
+        print("ERR! Normalization method dont exist!")
+        return
+    
+    # 对不需归一化和归一化后的df进行合并
+    result_df = pd.concat([df_not2norm, df_normed], axis=1)
+    return result_df
+
+
+def df_norm_clinical(dataframe: pd.DataFrame,
+                     col_name: list = [],
+                     method: Literal["z_score", "min-max"] = ...,
+                     train_col_name: str = ("subject_info", "label"),
+                     train_col_values: list = [0, 0.5, 1]) -> pd.DataFrame:
+    '''
+    对dataframe的指定列进行归一化,
+    指定训练scaler的数据范围。
+    
+    Args:
+    ------
+        * `dataframe`:
+        * `col_name`: 需要进行归一化的列名
+        * `method`: 可选`z_score`, `min-max`
+        * `train_col_name`: 指定df中用于训练scaler的列名
+        * `train_col_values`: 指定df中用于训练scaler的列的数值范围
+    '''
+    all_col_name = list(dataframe)  # 获取所有列名
+    col_name2drop = [i for i in all_col_name if i not in col_name]  # 列名取差集
+    # 暂存不需要进行归一化的数据
+    df_not2norm = dataframe[col_name2drop]
+    # 需要进行归一化的数据
+    df2norm = dataframe[col_name]
+    # 用于训练scaler的df
+    train_data = dataframe[dataframe[train_col_name].isin(train_col_values)][col_name]
+
+    # 根据method进行归一化
+    if method == "z_score":
+        scaler = preprocessing.StandardScaler().fit(train_data).fit_transform(df2norm)
+        df_normed = pd.DataFrame(scaler, index = dataframe.index, columns = col_name)
+    elif method == "min-max":
+        scaler = preprocessing.MinMaxScaler().fit(train_data).fit_transform(df2norm)
         df_normed = pd.DataFrame(scaler, index = dataframe.index, columns = col_name)
     else:
         print("ERR! Normalization method dont exist!")
