@@ -959,7 +959,7 @@ class ButterFilter():
 
 
 def freq_spec(y, fs):
-    # 获得一段信号y的频谱，并return计算结果
+    '''获得一段信号y的频谱，并return计算结果'''
     N = len(y)
     fft_x = np.linspace(0.0, fs/2.0, N//2)
     fft_values = np.fft.fft(y)
@@ -1229,7 +1229,8 @@ def df_norm_clinical(dataframe: pd.DataFrame,
 
 
 def df_norm_with_selfscaler(dataframe: pd.DataFrame, col_name: list = [], self_scaler = ...) -> pd.DataFrame:
-    """对dataframe的指定列进行归一化
+    '''
+    使用自定义scaler对dataframe的指定列进行归一化
     
     Args:
     ------
@@ -1240,7 +1241,7 @@ def df_norm_with_selfscaler(dataframe: pd.DataFrame, col_name: list = [], self_s
     Outputs:
     ------
         * df
-    """
+    '''
     all_col_name = list(dataframe)  # 获取所有列名
     col_name2drop = [i for i in all_col_name if i not in col_name]  # 列名取差集
     # 暂存不需要进行归一化的数据
@@ -1302,15 +1303,17 @@ def z_score_norm(dataframe, col_name = []):
 '''
 
 def df_save_csv(dataframe, filename):
-    '''把dataframe存到文件路径filename处
+    '''
+    把dataframe存到文件路径filename处
     
     覆写检测，避免损失之前的数据
-    不保存index'''
+    不保存index
+    '''
     # Use this function to search for any files which match your filename
     files_present = glob.glob(filename)
     # if no matching files, write to csv, if there are matching files, print statement
     if not files_present:
-        dataframe.to_csv(filename, index = False)
+        dataframe.to_csv(filename, index = False, date_format="%Y-%m-%d %H:%M:%S,%f")
         print(f"File {filename} saved!")
     else:
         print(f"WARNING: File {filename} NOT saved (same file already exists!)")
