@@ -3,7 +3,9 @@ import numpy as np
 import joblib
 import os
 # private file
-from utils_iFEMG_feature import *
+import sys
+sys.path.append('..')
+from utils.utils_iFEMG_feature import *
 
 
 def one_channel_analysis(db_file_path,
@@ -414,8 +416,9 @@ def form_feature_df_1ch(db_file_path: str,
     计算一通道传感器的特征值(绝对值)
     
     Args:
-    * `signal_sample_freq`: 1626 or 1222
-    * `ch_nums`: 4 channels or 8 channels
+    ----
+        * `signal_sample_freq`: 1626 or 1222
+        * `ch_nums`: 4 channels or 8 channels
     ------
     Output:
     ------

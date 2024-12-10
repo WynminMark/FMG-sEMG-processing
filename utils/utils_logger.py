@@ -17,6 +17,7 @@ def logger_init(log_file_name = 'monitor',
     * 'log_dir`
     * 'only_file': while `True`, logging message in file only. while `False`, logging message in file and output menu.
     """
+    
     # 指定路径
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)

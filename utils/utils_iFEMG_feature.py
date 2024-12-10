@@ -727,6 +727,35 @@ def read_label(file_path):
     return label_split
 
 
+def readLabel2df(file_path:str)->pd.DataFrame:
+    '''
+    获得motion_guide_gui.txt保存的label [] 
+
+    Output: 包含两列的df
+    ----
+        * `time`: datetime格式时间戳
+        * `label`: label动作标签
+    '''
+    result_lst = []
+
+    with open(file_path, "rb") as f:
+        encoding_method = chardet.detect(f.read())["encoding"]
+
+    with open(file_path, "r", encoding=encoding_method) as f:
+        for line in f.readlines():
+            line = line.strip('\n')
+            if line:
+                line_split = line.split(' ')
+                temp = [line_split[0]+' '+line_split[1], line_split[2]]
+                result_lst.append(temp)
+                pass
+    result_df = pd.DataFrame(result_lst, columns=['time', 'label'])
+    # 将时间列转换为datetime类型
+    result_df['time'] = pd.to_datetime(result_df['time'], format="%Y-%m-%d %H:%M:%S.%f")
+
+    return result_df
+
+
 def pdtable_read_db(file_path):
     '''
     读取FMG.db
@@ -1306,8 +1335,11 @@ def df_save_csv(dataframe, filename):
     '''
     把dataframe存到文件路径filename处
     
-    覆写检测，避免损失之前的数据
-    不保存index
+    Features
+    ----
+        * 覆写检测，避免损失之前的数据
+        * 不保存index
+        * datetime类型保存格式为`%Y-%m-%d %H:%M:%S,%f`
     '''
     # Use this function to search for any files which match your filename
     files_present = glob.glob(filename)
