@@ -304,6 +304,9 @@ class LabeledSignalFeature():
     """
     def __init__(self, signal_array, signal_time_array, label, sample_frequency):
         """
+        Args:
+        ----
+        * 
         """
         # 初始化数据，数据的时间戳，label
         self.raw_signal = signal_array
@@ -329,6 +332,7 @@ class LabeledSignalFeature():
         # reset
         self.rest_signal_segment = []
         self.active_signal_segment = []
+        
         #将db文件中的时间转换为ms level时间戳
         t_stamp = [] # 保存数据文件中时间转换的时间戳，精度ms
         for t in self.raw_signal_time:
