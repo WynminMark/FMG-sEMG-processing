@@ -4,7 +4,6 @@
 
 import pyaudio
 import wave
-import sys
 
 def play_wav(file_path):
     chunk = 1024

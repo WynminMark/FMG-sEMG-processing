@@ -3,9 +3,8 @@ import numpy as np
 import joblib
 import os
 # private file
-import sys
-sys.path.append('..')
-from utils.utils_iFEMG_feature import *
+
+from .utils_iFEMG_feature import *
 
 
 def one_channel_analysis(db_file_path,
